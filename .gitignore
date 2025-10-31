@@ -1,0 +1,21 @@
+# Rust
+/target/
+Cargo.lock
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Application specific
+processed_profiles.json
+.env
+
+# Logs
+*.log
+auth.txt
+remilia_cookies.json
+friends_db.json

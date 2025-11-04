@@ -1,0 +1,3866 @@
+curl 'https://boards.miladychan.org/json/chat/beetle/201346/eyJhbGciOiJFZERTQSIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJCeVd1a055eWpjNjJvZndpbHhObFc5NGo2MG52V1Ziel9XMzcyZDR0QnZNIn0.eyJleHAiOjE3NjE0MTcxMjEsImlhdCI6MTc2MTI0NDMyMSwiYXV0aF90aW1lIjoxNzYxMjQ0MzIxLCJqdGkiOiI2YWQwOGZmOC04Nzg3LTQ1MDgtYTZjNi1hN2I0ZTUyZDdhNzMiLCJpc3MiOiJodHRwczovL3Nzby5yZW1pbGlhLm9yZy9yZWFsbXMvcmVtaWxpYSIsImF1ZCI6ImFjY291bnQiLCJzdWIiOiI2YzJjNDE3Zi03OTI0LTRkZTMtODFmZS0yZWY4MTE1ODkxMGQiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJwcm9maWxlIiwic2lkIjoiNzZkZTRjOTMtZmJiNi00NjM4LTljZTgtNTgzMTQ2ZjQ1MGU1IiwiYWNyIjoiMCIsImFsbG93ZWQtb3JpZ2lucyI6WyIqIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJvZmZsaW5lX2FjY2VzcyIsImRlZmF1bHQtcm9sZXMtcmVtaWxpYSIsInVtYV9hdXRob3JpemF0aW9uIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBlbWFpbCIsInJpY2hfZGF0YSI6IntcImRpc3BsYXlVc2VybmFtZVwiOlwibWFvXCIsXCJwZnBcIjp7XCJwcm9qZWN0XCI6XCJWZXJ5SW50ZXJuZXRQZXJzb25cIixcImlkXCI6XCIyNjA4XCJ9LFwicGZwVXJsXCI6XCJodHRwczovL3BmcC5yZW1pbGlhLmNvbS9wZnAvdmVyeWludGVybmV0cGVyc29uLzI2MDhcIixcImRpc3BsYXlOYW1lXCI6XCJtYU8gWlwiLFwidGhlbWVcIjpcImNvbG9yXCIsXCJjb3ZlclwiOlwiTW9vblwiLFwiY29sb3JcIjoyNjgsXCJvbmJvYXJkZWRcIjp0cnVlfSIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwiYW1yIjpbXSwiZW1haWwiOiJ0aWVsYWZhbWlsbGUuZXRoQGdtYWlsLmNvbSJ9.T2T6h_4C1IET4MpdLJL2UgFgsSBo5BTE4Aoo5W5zY7Rrnuc7EvPDgylIlZUBcePYIDcL3MCQFyNKzEoKr6_rDg?last=100' \
+  -H 'accept: */*' \
+  -H 'accept-language: fr-FR,fr;q=0.8' \
+  -H 'if-none-match: W/"3522576814"' \
+  -H 'origin: https://www.remilia.com' \
+  -H 'priority: u=1, i' \
+  -H 'referer: https://www.remilia.com/' \
+  -H 'sec-ch-ua: "Brave";v="141", "Not?A_Brand";v="8", "Chromium";v="141"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "macOS"' \
+  -H 'sec-fetch-dest: empty' \
+  -H 'sec-fetch-mode: cors' \
+  -H 'sec-fetch-site: cross-site' \
+  -H 'sec-gpc: 1' \
+  -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
+
+
+  Request URL
+https://boards.miladychan.org/json/chat/beetle/201346/eyJhbGciOiJFZERTQSIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJCeVd1a055eWpjNjJvZndpbHhObFc5NGo2MG52V1Ziel9XMzcyZDR0QnZNIn0.eyJleHAiOjE3NjE0MTcxMjEsImlhdCI6MTc2MTI0NDMyMSwiYXV0aF90aW1lIjoxNzYxMjQ0MzIxLCJqdGkiOiI2YWQwOGZmOC04Nzg3LTQ1MDgtYTZjNi1hN2I0ZTUyZDdhNzMiLCJpc3MiOiJodHRwczovL3Nzby5yZW1pbGlhLm9yZy9yZWFsbXMvcmVtaWxpYSIsImF1ZCI6ImFjY291bnQiLCJzdWIiOiI2YzJjNDE3Zi03OTI0LTRkZTMtODFmZS0yZWY4MTE1ODkxMGQiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJwcm9maWxlIiwic2lkIjoiNzZkZTRjOTMtZmJiNi00NjM4LTljZTgtNTgzMTQ2ZjQ1MGU1IiwiYWNyIjoiMCIsImFsbG93ZWQtb3JpZ2lucyI6WyIqIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJvZmZsaW5lX2FjY2VzcyIsImRlZmF1bHQtcm9sZXMtcmVtaWxpYSIsInVtYV9hdXRob3JpemF0aW9uIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBlbWFpbCIsInJpY2hfZGF0YSI6IntcImRpc3BsYXlVc2VybmFtZVwiOlwibWFvXCIsXCJwZnBcIjp7XCJwcm9qZWN0XCI6XCJWZXJ5SW50ZXJuZXRQZXJzb25cIixcImlkXCI6XCIyNjA4XCJ9LFwicGZwVXJsXCI6XCJodHRwczovL3BmcC5yZW1pbGlhLmNvbS9wZnAvdmVyeWludGVybmV0cGVyc29uLzI2MDhcIixcImRpc3BsYXlOYW1lXCI6XCJtYU8gWlwiLFwidGhlbWVcIjpcImNvbG9yXCIsXCJjb3ZlclwiOlwiTW9vblwiLFwiY29sb3JcIjoyNjgsXCJvbmJvYXJkZWRcIjp0cnVlfSIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwiYW1yIjpbXSwiZW1haWwiOiJ0aWVsYWZhbWlsbGUuZXRoQGdtYWlsLmNvbSJ9.T2T6h_4C1IET4MpdLJL2UgFgsSBo5BTE4Aoo5W5zY7Rrnuc7EvPDgylIlZUBcePYIDcL3MCQFyNKzEoKr6_rDg?last=100
+Request Method
+GET
+Status Code
+200 OK
+Remote Address
+172.67.176.134:443
+Referrer Policy
+strict-origin-when-cross-origin
+access-control-allow-credentials
+true
+access-control-allow-headers
+Content-Type, Authorization, Cookie, X-Requested-With
+access-control-allow-methods
+GET, POST, OPTIONS, PUT, DELETE, PATCH
+access-control-allow-origin
+https://www.remilia.com
+cache-control
+no-cache
+cf-cache-status
+DYNAMIC
+cf-ray
+9937879468ab9782-MRS
+content-encoding
+br
+content-type
+application/json
+date
+Fri, 24 Oct 2025 06:48:38 GMT
+etag
+W/"3522577011"
+expires
+Fri, 01 Jan 1990 00:00:00 GMT
+nel
+{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+server
+cloudflare
+x-frame-options
+sameorigin
+:authority
+boards.miladychan.org
+:method
+GET
+:path
+/json/chat/beetle/201346/eyJhbGciOiJFZERTQSIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJCeVd1a055eWpjNjJvZndpbHhObFc5NGo2MG52V1Ziel9XMzcyZDR0QnZNIn0.eyJleHAiOjE3NjE0MTcxMjEsImlhdCI6MTc2MTI0NDMyMSwiYXV0aF90aW1lIjoxNzYxMjQ0MzIxLCJqdGkiOiI2YWQwOGZmOC04Nzg3LTQ1MDgtYTZjNi1hN2I0ZTUyZDdhNzMiLCJpc3MiOiJodHRwczovL3Nzby5yZW1pbGlhLm9yZy9yZWFsbXMvcmVtaWxpYSIsImF1ZCI6ImFjY291bnQiLCJzdWIiOiI2YzJjNDE3Zi03OTI0LTRkZTMtODFmZS0yZWY4MTE1ODkxMGQiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJwcm9maWxlIiwic2lkIjoiNzZkZTRjOTMtZmJiNi00NjM4LTljZTgtNTgzMTQ2ZjQ1MGU1IiwiYWNyIjoiMCIsImFsbG93ZWQtb3JpZ2lucyI6WyIqIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJvZmZsaW5lX2FjY2VzcyIsImRlZmF1bHQtcm9sZXMtcmVtaWxpYSIsInVtYV9hdXRob3JpemF0aW9uIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBlbWFpbCIsInJpY2hfZGF0YSI6IntcImRpc3BsYXlVc2VybmFtZVwiOlwibWFvXCIsXCJwZnBcIjp7XCJwcm9qZWN0XCI6XCJWZXJ5SW50ZXJuZXRQZXJzb25cIixcImlkXCI6XCIyNjA4XCJ9LFwicGZwVXJsXCI6XCJodHRwczovL3BmcC5yZW1pbGlhLmNvbS9wZnAvdmVyeWludGVybmV0cGVyc29uLzI2MDhcIixcImRpc3BsYXlOYW1lXCI6XCJtYU8gWlwiLFwidGhlbWVcIjpcImNvbG9yXCIsXCJjb3ZlclwiOlwiTW9vblwiLFwiY29sb3JcIjoyNjgsXCJvbmJvYXJkZWRcIjp0cnVlfSIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwiYW1yIjpbXSwiZW1haWwiOiJ0aWVsYWZhbWlsbGUuZXRoQGdtYWlsLmNvbSJ9.T2T6h_4C1IET4MpdLJL2UgFgsSBo5BTE4Aoo5W5zY7Rrnuc7EvPDgylIlZUBcePYIDcL3MCQFyNKzEoKr6_rDg?last=100
+:scheme
+https
+accept
+*/*
+accept-encoding
+gzip, deflate, br, zstd
+accept-language
+fr-FR,fr;q=0.8
+if-none-match
+W/"3522576814"
+origin
+https://www.remilia.com
+priority
+u=1, i
+referer
+https://www.remilia.com/
+sec-ch-ua
+"Brave";v="141", "Not?A_Brand";v="8", "Chromium";v="141"
+sec-ch-ua-mobile
+?0
+sec-ch-ua-platform
+"macOS"
+sec-fetch-dest
+empty
+sec-fetch-mode
+cors
+sec-fetch-site
+cross-site
+sec-gpc
+1
+user-agent
+Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+Request URL
+https://boards.miladychan.org/json/chat/beetle/201346/eyJhbGciOiJFZERTQSIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJCeVd1a055eWpjNjJvZndpbHhObFc5NGo2MG52V1Ziel9XMzcyZDR0QnZNIn0.eyJleHAiOjE3NjE0MTcxMjEsImlhdCI6MTc2MTI0NDMyMSwiYXV0aF90aW1lIjoxNzYxMjQ0MzIxLCJqdGkiOiI2YWQwOGZmOC04Nzg3LTQ1MDgtYTZjNi1hN2I0ZTUyZDdhNzMiLCJpc3MiOiJodHRwczovL3Nzby5yZW1pbGlhLm9yZy9yZWFsbXMvcmVtaWxpYSIsImF1ZCI6ImFjY291bnQiLCJzdWIiOiI2YzJjNDE3Zi03OTI0LTRkZTMtODFmZS0yZWY4MTE1ODkxMGQiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJwcm9maWxlIiwic2lkIjoiNzZkZTRjOTMtZmJiNi00NjM4LTljZTgtNTgzMTQ2ZjQ1MGU1IiwiYWNyIjoiMCIsImFsbG93ZWQtb3JpZ2lucyI6WyIqIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJvZmZsaW5lX2FjY2VzcyIsImRlZmF1bHQtcm9sZXMtcmVtaWxpYSIsInVtYV9hdXRob3JpemF0aW9uIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBlbWFpbCIsInJpY2hfZGF0YSI6IntcImRpc3BsYXlVc2VybmFtZVwiOlwibWFvXCIsXCJwZnBcIjp7XCJwcm9qZWN0XCI6XCJWZXJ5SW50ZXJuZXRQZXJzb25cIixcImlkXCI6XCIyNjA4XCJ9LFwicGZwVXJsXCI6XCJodHRwczovL3BmcC5yZW1pbGlhLmNvbS9wZnAvdmVyeWludGVybmV0cGVyc29uLzI2MDhcIixcImRpc3BsYXlOYW1lXCI6XCJtYU8gWlwiLFwidGhlbWVcIjpcImNvbG9yXCIsXCJjb3ZlclwiOlwiTW9vblwiLFwiY29sb3JcIjoyNjgsXCJvbmJvYXJkZWRcIjp0cnVlfSIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwiYW1yIjpbXSwiZW1haWwiOiJ0aWVsYWZhbWlsbGUuZXRoQGdtYWlsLmNvbSJ9.T2T6h_4C1IET4MpdLJL2UgFgsSBo5BTE4Aoo5W5zY7Rrnuc7EvPDgylIlZUBcePYIDcL3MCQFyNKzEoKr6_rDg?last=100
+Request Method
+GET
+Status Code
+200 OK
+Remote Address
+172.67.176.134:443
+Referrer Policy
+strict-origin-when-cross-origin
+access-control-allow-credentials
+true
+access-control-allow-headers
+Content-Type, Authorization, Cookie, X-Requested-With
+access-control-allow-methods
+GET, POST, OPTIONS, PUT, DELETE, PATCH
+access-control-allow-origin
+https://www.remilia.com
+cache-control
+no-cache
+cf-cache-status
+DYNAMIC
+cf-ray
+9937879468ab9782-MRS
+content-encoding
+br
+content-type
+application/json
+date
+Fri, 24 Oct 2025 06:48:38 GMT
+etag
+W/"3522577011"
+expires
+Fri, 01 Jan 1990 00:00:00 GMT
+nel
+{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+server
+cloudflare
+x-frame-options
+sameorigin
+:authority
+boards.miladychan.org
+:method
+GET
+:path
+/json/chat/beetle/201346/eyJhbGciOiJFZERTQSIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJCeVd1a055eWpjNjJvZndpbHhObFc5NGo2MG52V1Ziel9XMzcyZDR0QnZNIn0.eyJleHAiOjE3NjE0MTcxMjEsImlhdCI6MTc2MTI0NDMyMSwiYXV0aF90aW1lIjoxNzYxMjQ0MzIxLCJqdGkiOiI2YWQwOGZmOC04Nzg3LTQ1MDgtYTZjNi1hN2I0ZTUyZDdhNzMiLCJpc3MiOiJodHRwczovL3Nzby5yZW1pbGlhLm9yZy9yZWFsbXMvcmVtaWxpYSIsImF1ZCI6ImFjY291bnQiLCJzdWIiOiI2YzJjNDE3Zi03OTI0LTRkZTMtODFmZS0yZWY4MTE1ODkxMGQiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJwcm9maWxlIiwic2lkIjoiNzZkZTRjOTMtZmJiNi00NjM4LTljZTgtNTgzMTQ2ZjQ1MGU1IiwiYWNyIjoiMCIsImFsbG93ZWQtb3JpZ2lucyI6WyIqIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJvZmZsaW5lX2FjY2VzcyIsImRlZmF1bHQtcm9sZXMtcmVtaWxpYSIsInVtYV9hdXRob3JpemF0aW9uIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBlbWFpbCIsInJpY2hfZGF0YSI6IntcImRpc3BsYXlVc2VybmFtZVwiOlwibWFvXCIsXCJwZnBcIjp7XCJwcm9qZWN0XCI6XCJWZXJ5SW50ZXJuZXRQZXJzb25cIixcImlkXCI6XCIyNjA4XCJ9LFwicGZwVXJsXCI6XCJodHRwczovL3BmcC5yZW1pbGlhLmNvbS9wZnAvdmVyeWludGVybmV0cGVyc29uLzI2MDhcIixcImRpc3BsYXlOYW1lXCI6XCJtYU8gWlwiLFwidGhlbWVcIjpcImNvbG9yXCIsXCJjb3ZlclwiOlwiTW9vblwiLFwiY29sb3JcIjoyNjgsXCJvbmJvYXJkZWRcIjp0cnVlfSIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwiYW1yIjpbXSwiZW1haWwiOiJ0aWVsYWZhbWlsbGUuZXRoQGdtYWlsLmNvbSJ9.T2T6h_4C1IET4MpdLJL2UgFgsSBo5BTE4Aoo5W5zY7Rrnuc7EvPDgylIlZUBcePYIDcL3MCQFyNKzEoKr6_rDg?last=100
+:scheme
+https
+accept
+*/*
+accept-encoding
+gzip, deflate, br, zstd
+accept-language
+fr-FR,fr;q=0.8
+if-none-match
+W/"3522576814"
+origin
+https://www.remilia.com
+priority
+u=1, i
+referer
+https://www.remilia.com/
+sec-ch-ua
+"Brave";v="141", "Not?A_Brand";v="8", "Chromium";v="141"
+sec-ch-ua-mobile
+?0
+sec-ch-ua-platform
+"macOS"
+sec-fetch-dest
+empty
+sec-fetch-mode
+cors
+sec-fetch-site
+cross-site
+sec-gpc
+1
+user-agent
+Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+
+{
+    "abbrev": true,
+    "sticky": true,
+    "locked": false,
+    "post_count": 14995,
+    "image_count": 1476,
+    "update_time": 1761288517,
+    "bump_time": 1761256420,
+    "subject": "RemiliaNET Global Chat",
+    "board": "beetle",
+    "activity": 108,
+    "connected": 68,
+    "unique_posters": 913,
+    "editing": false,
+    "sage": false,
+    "shiny": false,
+    "auth": 0,
+    "id": 201346,
+    "time": 1761152354,
+    "body": "Welcome to RemiliaNET Global Chat! We're Cheesed to see you! Have a Beetleful day! ",
+    "flag": "",
+    "name": "Michael Dragovic",
+    "trip": "",
+    "image": {
+        "spoiler": false,
+        "audio": false,
+        "video": true,
+        "file_type": 1,
+        "thumb_type": 16,
+        "length": 0,
+        "dims": [
+            414,
+            120,
+            150,
+            43
+        ],
+        "size": 19786,
+        "artist": "",
+        "title": "",
+        "md5": "uWq6UWuuz-65GzPqid8Bhw",
+        "sha1": "d15e01b01a6d356459b0b9915c0d2df00a376536",
+        "name": "20251022165914"
+    },
+    "links": null,
+    "commands": null,
+    "moderation": null,
+    "reactions": null,
+    "op": 0,
+    "user": {
+        "rich": true,
+        "pfpUrl": "https://pfp.remilia.com/pfp/default/651b6b94bf3dac79c223affc",
+        "username": "michaeldragovic",
+        "displayname": "Michael Dragovic",
+        "bio": "This user has chosen to remain anonymous for their own safety.",
+        "beetleStats": {
+            "cheese": 1110,
+            "xp": 19168,
+            "beetles": 217
+        }
+    },
+    "posts": [
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216759,
+            "time": 1761287707,
+            "body": "sometimes cheese guy ggives me 560 ",
+            "flag": "",
+            "name": "Nightjar",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/veryinternetperson/614",
+                "username": "nightjar",
+                "displayname": "Nightjar",
+                "bio": "This user loves cute existential risk",
+                "beetleStats": {
+                    "cheese": 306,
+                    "xp": 130152,
+                    "beetles": 1049
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216760,
+            "time": 1761287711,
+            "body": ".",
+            "flag": "",
+            "name": "milady",
+            "trip": "",
+            "image": {
+                "spoiler": false,
+                "audio": false,
+                "video": true,
+                "file_type": 1,
+                "thumb_type": 16,
+                "length": 0,
+                "dims": [
+                    720,
+                    557,
+                    150,
+                    116
+                ],
+                "size": 626784,
+                "artist": "",
+                "title": "",
+                "md5": "iO6YW-bSpKgIr1Qvwm0UIQ",
+                "sha1": "7acbfdba00f87e19a048e4b3bff30b6bbec1bdfb",
+                "name": "20251024063510"
+            },
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/833ba08d66496878d7ef8c57",
+                "username": "arltb",
+                "displayname": "milady",
+                "bio": "This user is lost in the sauce.\n\u0026 running sudo rm -rf / --no-preserve-root from your home directory (~)",
+                "beetleStats": {
+                    "cheese": 8010,
+                    "xp": 76899,
+                    "beetles": 351
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216761,
+            "time": 1761287715,
+            "body": "now hew gave 360 hellp",
+            "flag": "",
+            "name": "Nightjar",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": [
+                {
+                    "emoji": 0,
+                    "count": 2
+                },
+                {
+                    "emoji": 1,
+                    "count": 0
+                },
+                {
+                    "emoji": 2,
+                    "count": 0
+                },
+                {
+                    "emoji": 3,
+                    "count": 0
+                },
+                {
+                    "emoji": 4,
+                    "count": 0
+                },
+                {
+                    "emoji": 5,
+                    "count": 0
+                },
+                {
+                    "emoji": 6,
+                    "count": 0
+                },
+                {
+                    "emoji": 7,
+                    "count": 0
+                }
+            ],
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/veryinternetperson/614",
+                "username": "nightjar",
+                "displayname": "Nightjar",
+                "bio": "This user loves cute existential risk",
+                "beetleStats": {
+                    "cheese": 306,
+                    "xp": 130152,
+                    "beetles": 1049
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216762,
+            "time": 1761287727,
+            "body": "He's nibbling on ya cheese lad",
+            "flag": "",
+            "name": "Big Zigg",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/yayo/1183",
+                "username": "beetlsuo",
+                "displayname": "Big Zigg",
+                "bio": "This user that read wrong. You read that wrong too. You are looking now. You are smiling.",
+                "beetleStats": {
+                    "cheese": 4,
+                    "xp": 130015,
+                    "beetles": 1156
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216763,
+            "time": 1761287732,
+            "body": "milady",
+            "flag": "",
+            "name": "Calix",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/remilio/1306",
+                "username": "infinite",
+                "displayname": "Calix",
+                "bio": "Drafted into sacred geometry and parametericism",
+                "beetleStats": {
+                    "cheese": 2660,
+                    "xp": 95262,
+                    "beetles": 672
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216764,
+            "time": 1761287742,
+            "body": "he gave me dubs today",
+            "flag": "",
+            "name": "mothest",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/c14bd82bc9c357b43fc820a8",
+                "username": "sunshinesilkmoth",
+                "displayname": "mothest",
+                "bio": "Bugs are friends and friends and friends.\n🧀Cheeseman my nearest and dearest🌞",
+                "beetleStats": {
+                    "cheese": 6868,
+                    "xp": 65409,
+                    "beetles": 322
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216765,
+            "time": 1761287742,
+            "body": "lol ",
+            "flag": "",
+            "name": "Nightjar",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/veryinternetperson/614",
+                "username": "nightjar",
+                "displayname": "Nightjar",
+                "bio": "This user loves cute existential risk",
+                "beetleStats": {
+                    "cheese": 306,
+                    "xp": 130152,
+                    "beetles": 1049
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216766,
+            "time": 1761287745,
+            "body": "",
+            "flag": "",
+            "name": "milady",
+            "trip": "",
+            "image": {
+                "spoiler": false,
+                "audio": false,
+                "video": true,
+                "file_type": 1,
+                "thumb_type": 16,
+                "length": 0,
+                "dims": [
+                    720,
+                    557,
+                    150,
+                    116
+                ],
+                "size": 621815,
+                "artist": "",
+                "title": "",
+                "md5": "CBrgOiQHvC62wh2w1jtAEw",
+                "sha1": "dfb854137b06b744239074d1b5e4ae4b6100533b",
+                "name": "20251024063544"
+            },
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/833ba08d66496878d7ef8c57",
+                "username": "arltb",
+                "displayname": "milady",
+                "bio": "This user is lost in the sauce.\n\u0026 running sudo rm -rf / --no-preserve-root from your home directory (~)",
+                "beetleStats": {
+                    "cheese": 8010,
+                    "xp": 76899,
+                    "beetles": 351
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216767,
+            "time": 1761287750,
+            "body": "fr why is thhe cheese amount so random",
+            "flag": "",
+            "name": "Nightjar",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/veryinternetperson/614",
+                "username": "nightjar",
+                "displayname": "Nightjar",
+                "bio": "This user loves cute existential risk",
+                "beetleStats": {
+                    "cheese": 306,
+                    "xp": 130152,
+                    "beetles": 1049
+                }
+            }
+        },
+        {
+            "editing": true,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216768,
+            "time": 1761287764,
+            "body": "",
+            "flag": "",
+            "name": "EXHAUST",
+            "trip": "",
+            "image": {
+                "spoiler": false,
+                "audio": false,
+                "video": true,
+                "file_type": 0,
+                "thumb_type": 16,
+                "length": 0,
+                "dims": [
+                    3456,
+                    2304,
+                    150,
+                    100
+                ],
+                "size": 1902200,
+                "artist": "",
+                "title": "",
+                "md5": "331y4hwCufzbXJf3h934yg",
+                "sha1": "2da458a00533baa78e3a327facc2b849392b4d97",
+                "name": "20251024063603"
+            },
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/molady/7560",
+                "username": "exhaust",
+                "displayname": "EXHAUST",
+                "bio": "This user dreams of a world without TV, music, photography, computer screens, headphones, audio and video games.",
+                "beetleStats": {
+                    "cheese": 2809,
+                    "xp": 57893,
+                    "beetles": 360
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216769,
+            "time": 1761287769,
+            "body": "cheese amount directly correlates to ",
+            "flag": "",
+            "name": "Calix",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/remilio/1306",
+                "username": "infinite",
+                "displayname": "Calix",
+                "bio": "Drafted into sacred geometry and parametericism",
+                "beetleStats": {
+                    "cheese": 2660,
+                    "xp": 95262,
+                    "beetles": 672
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216770,
+            "time": 1761287773,
+            "body": "a nibbler",
+            "flag": "",
+            "name": "von",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/remilio/5433",
+                "username": "von",
+                "displayname": "von",
+                "bio": "This user looked into building 7.",
+                "beetleStats": {
+                    "cheese": 624,
+                    "xp": 118025,
+                    "beetles": 873
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216771,
+            "time": 1761287802,
+            "body": "",
+            "flag": "",
+            "name": "emogirl",
+            "trip": "",
+            "image": {
+                "spoiler": false,
+                "audio": false,
+                "video": true,
+                "file_type": 1,
+                "thumb_type": 16,
+                "length": 0,
+                "dims": [
+                    1200,
+                    884,
+                    150,
+                    110
+                ],
+                "size": 849323,
+                "artist": "",
+                "title": "",
+                "md5": "aHNjeO416zhdgmY9PDHwjA",
+                "sha1": "383e92c39dde8664cb6f055441cee8297e220f75",
+                "name": "20251024063642"
+            },
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/ohiveseen/71",
+                "username": "emofemboy777",
+                "displayname": "emogirl",
+                "bio": "✙ This user is spiritually emo (:̲̅:̲̅:̲̅[̲̅:♡:]̲̅:̲̅:̲̅:̲̅)",
+                "beetleStats": {
+                    "cheese": 2947,
+                    "xp": 100528,
+                    "beetles": 703
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216772,
+            "time": 1761287813,
+            "body": "",
+            "flag": "",
+            "name": "Big Zigg",
+            "trip": "",
+            "image": {
+                "spoiler": false,
+                "audio": false,
+                "video": true,
+                "file_type": 0,
+                "thumb_type": 16,
+                "length": 0,
+                "dims": [
+                    500,
+                    608,
+                    123,
+                    150
+                ],
+                "size": 81312,
+                "artist": "",
+                "title": "",
+                "md5": "ftX4HtxWEiRI45IiZn4sZQ",
+                "sha1": "2c22f90782d5838c9e1623ace4d188741513d82b",
+                "name": "20251024063652"
+            },
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/yayo/1183",
+                "username": "beetlsuo",
+                "displayname": "Big Zigg",
+                "bio": "This user that read wrong. You read that wrong too. You are looking now. You are smiling.",
+                "beetleStats": {
+                    "cheese": 4,
+                    "xp": 130015,
+                    "beetles": 1156
+                }
+            }
+        },
+        {
+            "editing": true,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216773,
+            "time": 1761287828,
+            "body": "",
+            "flag": "",
+            "name": "mothest",
+            "trip": "",
+            "image": {
+                "spoiler": false,
+                "audio": false,
+                "video": true,
+                "file_type": 1,
+                "thumb_type": 16,
+                "length": 0,
+                "dims": [
+                    71,
+                    66,
+                    71,
+                    66
+                ],
+                "size": 4829,
+                "artist": "",
+                "title": "",
+                "md5": "OK49LeGp9Ew0icpLcDoSsw",
+                "sha1": "a34964f7c13659285ea295732f7ca9e93a38c862",
+                "name": "20251024063707"
+            },
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/c14bd82bc9c357b43fc820a8",
+                "username": "sunshinesilkmoth",
+                "displayname": "mothest",
+                "bio": "Bugs are friends and friends and friends.\n🧀Cheeseman my nearest and dearest🌞",
+                "beetleStats": {
+                    "cheese": 6868,
+                    "xp": 65409,
+                    "beetles": 322
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216774,
+            "time": 1761287828,
+            "body": "k so",
+            "flag": "",
+            "name": "milady",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/833ba08d66496878d7ef8c57",
+                "username": "arltb",
+                "displayname": "milady",
+                "bio": "This user is lost in the sauce.\n\u0026 running sudo rm -rf / --no-preserve-root from your home directory (~)",
+                "beetleStats": {
+                    "cheese": 8010,
+                    "xp": 76899,
+                    "beetles": 351
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216775,
+            "time": 1761287828,
+            "body": "cheeseman gave me dubs today",
+            "flag": "",
+            "name": "mothest",
+            "trip": "",
+            "image": {
+                "spoiler": false,
+                "audio": false,
+                "video": true,
+                "file_type": 1,
+                "thumb_type": 16,
+                "length": 0,
+                "dims": [
+                    71,
+                    66,
+                    71,
+                    66
+                ],
+                "size": 4082,
+                "artist": "",
+                "title": "",
+                "md5": "ftyrRpPrZgUgox7duAR78w",
+                "sha1": "97c77b7c96e4533493278c30d68306fdec9f10db",
+                "name": "20251024063708"
+            },
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/c14bd82bc9c357b43fc820a8",
+                "username": "sunshinesilkmoth",
+                "displayname": "mothest",
+                "bio": "Bugs are friends and friends and friends.\n🧀Cheeseman my nearest and dearest🌞",
+                "beetleStats": {
+                    "cheese": 6868,
+                    "xp": 65409,
+                    "beetles": 322
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216776,
+            "time": 1761287828,
+            "body": "I love remilia net it's so fun",
+            "flag": "",
+            "name": "RemiliaRabbi",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/a6d7d98614e158de583b5b23",
+                "username": "rabbikamile",
+                "displayname": "RemiliaRabbi",
+                "bio": "beetle game CEO🪲 地表最强奶酪领主🧀 annoying kike✡️",
+                "beetleStats": {
+                    "cheese": 1889,
+                    "xp": 111770,
+                    "beetles": 926
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216777,
+            "time": 1761287829,
+            "body": "bless me beetle",
+            "flag": "",
+            "name": "anthroposcene",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/8bd4b072489aff24b4e17b7d",
+                "username": "anthroposcene",
+                "displayname": "anthroposcene",
+                "bio": "hi!perstition",
+                "beetleStats": {
+                    "cheese": 2978,
+                    "xp": 30313,
+                    "beetles": 166
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216778,
+            "time": 1761287829,
+            "body": "do the name colors signify something?",
+            "flag": "",
+            "name": "EXHAUST",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/molady/7560",
+                "username": "exhaust",
+                "displayname": "EXHAUST",
+                "bio": "This user dreams of a world without TV, music, photography, computer screens, headphones, audio and video games.",
+                "beetleStats": {
+                    "cheese": 2809,
+                    "xp": 57893,
+                    "beetles": 360
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216779,
+            "time": 1761287831,
+            "body": "queso",
+            "flag": "",
+            "name": "milady",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/833ba08d66496878d7ef8c57",
+                "username": "arltb",
+                "displayname": "milady",
+                "bio": "This user is lost in the sauce.\n\u0026 running sudo rm -rf / --no-preserve-root from your home directory (~)",
+                "beetleStats": {
+                    "cheese": 8010,
+                    "xp": 76899,
+                    "beetles": 351
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216780,
+            "time": 1761287832,
+            "body": "is chat working",
+            "flag": "",
+            "name": "pee pee pingus",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/retart/100",
+                "username": "peepeepingus",
+                "displayname": "pee pee pingus",
+                "bio": "IM PEE PEE PINGUS !!!!!!!!!",
+                "beetleStats": {
+                    "cheese": 4812,
+                    "xp": 73213,
+                    "beetles": 394
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216781,
+            "time": 1761287835,
+            "body": "oh hello",
+            "flag": "",
+            "name": "pee pee pingus",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": [
+                {
+                    "emoji": 0,
+                    "count": 0
+                },
+                {
+                    "emoji": 1,
+                    "count": 0
+                },
+                {
+                    "emoji": 2,
+                    "count": 0
+                },
+                {
+                    "emoji": 3,
+                    "count": 0
+                },
+                {
+                    "emoji": 4,
+                    "count": 0
+                },
+                {
+                    "emoji": 5,
+                    "count": 0
+                },
+                {
+                    "emoji": 6,
+                    "count": 0
+                },
+                {
+                    "emoji": 7,
+                    "count": 0
+                }
+            ],
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/retart/100",
+                "username": "peepeepingus",
+                "displayname": "pee pee pingus",
+                "bio": "IM PEE PEE PINGUS !!!!!!!!!",
+                "beetleStats": {
+                    "cheese": 4812,
+                    "xp": 73213,
+                    "beetles": 394
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216782,
+            "time": 1761287836,
+            "body": "yes",
+            "flag": "",
+            "name": "sherman",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/d0c1534bce9dc1683e873dc6",
+                "username": "sherman",
+                "displayname": "sherman",
+                "bio": "I am an expert in \n- astral travel/security\n- talking\n- yodeling\n- spoon bending\n- silent karaoke\n- reverse-birthing\n- smelling salts\n- microwave manipulation\n- espionage \n- rat breeding\n- emo girls\n- sitting down\n- standing up",
+                "beetleStats": {
+                    "cheese": 1402,
+                    "xp": 41018,
+                    "beetles": 236
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216783,
+            "time": 1761287837,
+            "body": "he gave me 500 yesteday and now 300 huhuhuhu",
+            "flag": "",
+            "name": "Nightjar",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/veryinternetperson/614",
+                "username": "nightjar",
+                "displayname": "Nightjar",
+                "bio": "This user loves cute existential risk",
+                "beetleStats": {
+                    "cheese": 306,
+                    "xp": 130152,
+                    "beetles": 1049
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216784,
+            "time": 1761287844,
+            "body": "Heil yeag dubs cheese",
+            "flag": "",
+            "name": "Big Zigg",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/yayo/1183",
+                "username": "beetlsuo",
+                "displayname": "Big Zigg",
+                "bio": "This user that read wrong. You read that wrong too. You are looking now. You are smiling.",
+                "beetleStats": {
+                    "cheese": 4,
+                    "xp": 130015,
+                    "beetles": 1156
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216785,
+            "time": 1761287850,
+            "body": "i met the cheese man earlier ",
+            "flag": "",
+            "name": "RemiliaRabbi",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/a6d7d98614e158de583b5b23",
+                "username": "rabbikamile",
+                "displayname": "RemiliaRabbi",
+                "bio": "beetle game CEO🪲 地表最强奶酪领主🧀 annoying kike✡️",
+                "beetleStats": {
+                    "cheese": 1889,
+                    "xp": 111770,
+                    "beetles": 926
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216786,
+            "time": 1761287853,
+            "body": "hahaha only 500? my simps funded my private military operation",
+            "flag": "",
+            "name": "EXHAUST",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/molady/7560",
+                "username": "exhaust",
+                "displayname": "EXHAUST",
+                "bio": "This user dreams of a world without TV, music, photography, computer screens, headphones, audio and video games.",
+                "beetleStats": {
+                    "cheese": 2809,
+                    "xp": 57893,
+                    "beetles": 360
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216787,
+            "time": 1761287853,
+            "body": "cheeseman been blessin with 400 herez",
+            "flag": "",
+            "name": "Calix",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/remilio/1306",
+                "username": "infinite",
+                "displayname": "Calix",
+                "bio": "Drafted into sacred geometry and parametericism",
+                "beetleStats": {
+                    "cheese": 2660,
+                    "xp": 95262,
+                    "beetles": 672
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216788,
+            "time": 1761287865,
+            "body": "🧀🌎🧀🌎🧀🌎🧀🌎",
+            "flag": "",
+            "name": "MarbleCake",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/milady/9351",
+                "username": "marblecake",
+                "displayname": "MarbleCake",
+                "bio": "This user is a cybergnostic technopagan feral gremlin catgirl.",
+                "beetleStats": {
+                    "cheese": 590,
+                    "xp": 115860,
+                    "beetles": 925
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216789,
+            "time": 1761287901,
+            "body": "pee pee pingus pee pee pingus pee pee pingus ",
+            "flag": "",
+            "name": "EXHAUST",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/molady/7560",
+                "username": "exhaust",
+                "displayname": "EXHAUST",
+                "bio": "This user dreams of a world without TV, music, photography, computer screens, headphones, audio and video games.",
+                "beetleStats": {
+                    "cheese": 2809,
+                    "xp": 57893,
+                    "beetles": 360
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216790,
+            "time": 1761287905,
+            "body": "I think mine was 600 today",
+            "flag": "",
+            "name": "mothest",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/c14bd82bc9c357b43fc820a8",
+                "username": "sunshinesilkmoth",
+                "displayname": "mothest",
+                "bio": "Bugs are friends and friends and friends.\n🧀Cheeseman my nearest and dearest🌞",
+                "beetleStats": {
+                    "cheese": 6868,
+                    "xp": 65409,
+                    "beetles": 322
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216791,
+            "time": 1761287906,
+            "body": "oh cheese claim is now universal!",
+            "flag": "",
+            "name": "RemiliaRabbi",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/a6d7d98614e158de583b5b23",
+                "username": "rabbikamile",
+                "displayname": "RemiliaRabbi",
+                "bio": "beetle game CEO🪲 地表最强奶酪领主🧀 annoying kike✡️",
+                "beetleStats": {
+                    "cheese": 1889,
+                    "xp": 111770,
+                    "beetles": 926
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216792,
+            "time": 1761287912,
+            "body": "cheese ssn",
+            "flag": "",
+            "name": "milady",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/1ccda968d864913a04d22c90",
+                "username": "milord",
+                "displayname": "milady",
+                "bio": "This user has been gangstalked by two federal agents for the past six months.",
+                "beetleStats": {
+                    "cheese": 2444,
+                    "xp": 25258,
+                    "beetles": 179
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216793,
+            "time": 1761287923,
+            "body": "all of you wpm too low",
+            "flag": "",
+            "name": "pee pee pingus",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/retart/100",
+                "username": "peepeepingus",
+                "displayname": "pee pee pingus",
+                "bio": "IM PEE PEE PINGUS !!!!!!!!!",
+                "beetleStats": {
+                    "cheese": 4812,
+                    "xp": 73213,
+                    "beetles": 394
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216794,
+            "time": 1761287926,
+            "body": "Sup rabbi",
+            "flag": "",
+            "name": "Nightjar",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/veryinternetperson/614",
+                "username": "nightjar",
+                "displayname": "Nightjar",
+                "bio": "This user loves cute existential risk",
+                "beetleStats": {
+                    "cheese": 306,
+                    "xp": 130152,
+                    "beetles": 1049
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216795,
+            "time": 1761287934,
+            "body": "",
+            "flag": "",
+            "name": "emogirl",
+            "trip": "",
+            "image": {
+                "spoiler": false,
+                "audio": false,
+                "video": true,
+                "file_type": 1,
+                "thumb_type": 16,
+                "length": 0,
+                "dims": [
+                    720,
+                    723,
+                    149,
+                    150
+                ],
+                "size": 637260,
+                "artist": "",
+                "title": "",
+                "md5": "VQ-d-KnkmKkQLRn-ILPH8g",
+                "sha1": "b3b8c320bb474698b034bd21c6d8be1c4d31c19a",
+                "name": "20251024063854"
+            },
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/ohiveseen/71",
+                "username": "emofemboy777",
+                "displayname": "emogirl",
+                "bio": "✙ This user is spiritually emo (:̲̅:̲̅:̲̅[̲̅:♡:]̲̅:̲̅:̲̅:̲̅)",
+                "beetleStats": {
+                    "cheese": 2947,
+                    "xp": 100528,
+                    "beetles": 703
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216796,
+            "time": 1761287952,
+            "body": "any good grooming guides",
+            "flag": "",
+            "name": "sherman",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/d0c1534bce9dc1683e873dc6",
+                "username": "sherman",
+                "displayname": "sherman",
+                "bio": "I am an expert in \n- astral travel/security\n- talking\n- yodeling\n- spoon bending\n- silent karaoke\n- reverse-birthing\n- smelling salts\n- microwave manipulation\n- espionage \n- rat breeding\n- emo girls\n- sitting down\n- standing up",
+                "beetleStats": {
+                    "cheese": 1402,
+                    "xp": 41018,
+                    "beetles": 236
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216797,
+            "time": 1761287959,
+            "body": "gm",
+            "flag": "",
+            "name": "maO Z",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/veryinternetperson/2608",
+                "username": "mao",
+                "displayname": "maO Z",
+                "bio": "uwU",
+                "beetleStats": {
+                    "cheese": 940,
+                    "xp": 31799,
+                    "beetles": 219
+                }
+            }
+        },
+        {
+            "editing": true,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216798,
+            "time": 1761287974,
+            "body": "",
+            "flag": "",
+            "name": "Nightjar",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/veryinternetperson/614",
+                "username": "nightjar",
+                "displayname": "Nightjar",
+                "bio": "This user loves cute existential risk",
+                "beetleStats": {
+                    "cheese": 306,
+                    "xp": 130152,
+                    "beetles": 1049
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216799,
+            "time": 1761287974,
+            "body": "how do i improve my wpm?",
+            "flag": "",
+            "name": "EXHAUST",
+            "trip": "",
+            "image": {
+                "spoiler": false,
+                "audio": false,
+                "video": true,
+                "file_type": 0,
+                "thumb_type": 16,
+                "length": 0,
+                "dims": [
+                    3456,
+                    2304,
+                    150,
+                    100
+                ],
+                "size": 1692342,
+                "artist": "",
+                "title": "",
+                "md5": "AwSSKqC2aN4qj-mQRE6FlQ",
+                "sha1": "97ca1cc0d096f97eede433091ae6c24bde056e95",
+                "name": "20251024063933"
+            },
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/molady/7560",
+                "username": "exhaust",
+                "displayname": "EXHAUST",
+                "bio": "This user dreams of a world without TV, music, photography, computer screens, headphones, audio and video games.",
+                "beetleStats": {
+                    "cheese": 2809,
+                    "xp": 57893,
+                    "beetles": 360
+                }
+            }
+        },
+        {
+            "editing": true,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216800,
+            "time": 1761287975,
+            "body": "s",
+            "flag": "",
+            "name": "dyula",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/ff41012e240085f23ac1c1b6",
+                "username": "dyula",
+                "displayname": "dyula",
+                "bio": "Our great war is a spiritual war.",
+                "beetleStats": {
+                    "cheese": 2646,
+                    "xp": 87003,
+                    "beetles": 630
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216801,
+            "time": 1761287997,
+            "body": "cult gm",
+            "flag": "",
+            "name": "maO Z",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/veryinternetperson/2608",
+                "username": "mao",
+                "displayname": "maO Z",
+                "bio": "uwU",
+                "beetleStats": {
+                    "cheese": 940,
+                    "xp": 31799,
+                    "beetles": 219
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216802,
+            "time": 1761288021,
+            "body": "cult morning",
+            "flag": "",
+            "name": "von",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/remilio/5433",
+                "username": "von",
+                "displayname": "von",
+                "bio": "This user looked into building 7.",
+                "beetleStats": {
+                    "cheese": 624,
+                    "xp": 118025,
+                    "beetles": 873
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216803,
+            "time": 1761288055,
+            "body": "what are you mourning?",
+            "flag": "",
+            "name": "EXHAUST",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/molady/7560",
+                "username": "exhaust",
+                "displayname": "EXHAUST",
+                "bio": "This user dreams of a world without TV, music, photography, computer screens, headphones, audio and video games.",
+                "beetleStats": {
+                    "cheese": 2809,
+                    "xp": 57893,
+                    "beetles": 360
+                }
+            }
+        },
+        {
+            "editing": true,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216804,
+            "time": 1761288057,
+            "body": "",
+            "flag": "",
+            "name": "Lutfiy",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/antimiladies/8998",
+                "username": "lutfiy",
+                "displayname": "Lutfiy",
+                "bio": "This user is ugly but cute.",
+                "beetleStats": {
+                    "cheese": 871,
+                    "xp": 11759,
+                    "beetles": 58
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216805,
+            "time": 1761288057,
+            "body": "oh so it turns out",
+            "flag": "",
+            "name": "pee pee pingus",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/retart/100",
+                "username": "peepeepingus",
+                "displayname": "pee pee pingus",
+                "bio": "IM PEE PEE PINGUS !!!!!!!!!",
+                "beetleStats": {
+                    "cheese": 4812,
+                    "xp": 73213,
+                    "beetles": 394
+                }
+            }
+        },
+        {
+            "editing": true,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216806,
+            "time": 1761288057,
+            "body": "",
+            "flag": "",
+            "name": "virtue",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/a11ecc66aa9beab9692b2967",
+                "username": "virtue",
+                "displayname": "virtue",
+                "bio": "i htink i smell a choeese (¬`‸´¬) …ᘛ⁐̤ᕐᐷ 🧀\n\n ‎ ",
+                "beetleStats": {
+                    "cheese": 806,
+                    "xp": 125562,
+                    "beetles": 1096
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216807,
+            "time": 1761288057,
+            "body": "hmmm",
+            "flag": "",
+            "name": "Nightjar",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/veryinternetperson/614",
+                "username": "nightjar",
+                "displayname": "Nightjar",
+                "bio": "This user loves cute existential risk",
+                "beetleStats": {
+                    "cheese": 306,
+                    "xp": 130152,
+                    "beetles": 1049
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216808,
+            "time": 1761288060,
+            "body": "you can speedrun beetlehint",
+            "flag": "",
+            "name": "pee pee pingus",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/retart/100",
+                "username": "peepeepingus",
+                "displayname": "pee pee pingus",
+                "bio": "IM PEE PEE PINGUS !!!!!!!!!",
+                "beetleStats": {
+                    "cheese": 4812,
+                    "xp": 73213,
+                    "beetles": 394
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216809,
+            "time": 1761288064,
+            "body": "greetings",
+            "flag": "",
+            "name": "virtue",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": [
+                {
+                    "emoji": 0,
+                    "count": 0
+                },
+                {
+                    "emoji": 1,
+                    "count": 1
+                },
+                {
+                    "emoji": 2,
+                    "count": 1
+                },
+                {
+                    "emoji": 3,
+                    "count": 0
+                },
+                {
+                    "emoji": 4,
+                    "count": 0
+                },
+                {
+                    "emoji": 5,
+                    "count": 0
+                },
+                {
+                    "emoji": 6,
+                    "count": 0
+                },
+                {
+                    "emoji": 7,
+                    "count": 0
+                }
+            ],
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/a11ecc66aa9beab9692b2967",
+                "username": "virtue",
+                "displayname": "virtue",
+                "bio": "i htink i smell a choeese (¬`‸´¬) …ᘛ⁐̤ᕐᐷ 🧀\n\n ‎ ",
+                "beetleStats": {
+                    "cheese": 806,
+                    "xp": 125562,
+                    "beetles": 1096
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216810,
+            "time": 1761288066,
+            "body": "whoa",
+            "flag": "",
+            "name": "❤︎(˶˃ ᵕ ˂˶)❤︎",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/veryinternetperson/4622",
+                "username": "fizzie",
+                "displayname": "❤︎(˶˃ ᵕ ˂˶)❤︎",
+                "bio": "⊱ ────── {.⋅ ✯ ⋅.} ────── ⊰\nIn the name of God | \nRemilia Chief Network Angel | \nDo not engage with me, \nI am better as a concept. | \n𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼",
+                "beetleStats": {
+                    "cheese": 6135,
+                    "xp": 91777,
+                    "beetles": 590
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216811,
+            "time": 1761288067,
+            "body": "i hate the poke grind",
+            "flag": "",
+            "name": "Nightjar",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/veryinternetperson/614",
+                "username": "nightjar",
+                "displayname": "Nightjar",
+                "bio": "This user loves cute existential risk",
+                "beetleStats": {
+                    "cheese": 306,
+                    "xp": 130152,
+                    "beetles": 1049
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216812,
+            "time": 1761288068,
+            "body": "if you go check your level thingy while the animation is going then it instant shows you your beetol",
+            "flag": "",
+            "name": "pee pee pingus",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/retart/100",
+                "username": "peepeepingus",
+                "displayname": "pee pee pingus",
+                "bio": "IM PEE PEE PINGUS !!!!!!!!!",
+                "beetleStats": {
+                    "cheese": 4812,
+                    "xp": 73213,
+                    "beetles": 394
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216813,
+            "time": 1761288069,
+            "body": "hi niggas",
+            "flag": "",
+            "name": "❤︎(˶˃ ᵕ ˂˶)❤︎",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/veryinternetperson/4622",
+                "username": "fizzie",
+                "displayname": "❤︎(˶˃ ᵕ ˂˶)❤︎",
+                "bio": "⊱ ────── {.⋅ ✯ ⋅.} ────── ⊰\nIn the name of God | \nRemilia Chief Network Angel | \nDo not engage with me, \nI am better as a concept. | \n𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼",
+                "beetleStats": {
+                    "cheese": 6135,
+                    "xp": 91777,
+                    "beetles": 590
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216814,
+            "time": 1761288076,
+            "body": "my nigger",
+            "flag": "",
+            "name": "sherman",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/d0c1534bce9dc1683e873dc6",
+                "username": "sherman",
+                "displayname": "sherman",
+                "bio": "I am an expert in \n- astral travel/security\n- talking\n- yodeling\n- spoon bending\n- silent karaoke\n- reverse-birthing\n- smelling salts\n- microwave manipulation\n- espionage \n- rat breeding\n- emo girls\n- sitting down\n- standing up",
+                "beetleStats": {
+                    "cheese": 1402,
+                    "xp": 41018,
+                    "beetles": 236
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216815,
+            "time": 1761288078,
+            "body": "i hate the antichrist",
+            "flag": "",
+            "name": "EXHAUST",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/molady/7560",
+                "username": "exhaust",
+                "displayname": "EXHAUST",
+                "bio": "This user dreams of a world without TV, music, photography, computer screens, headphones, audio and video games.",
+                "beetleStats": {
+                    "cheese": 2809,
+                    "xp": 57893,
+                    "beetles": 360
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216816,
+            "time": 1761288095,
+            "body": "why would I want to take away from the experience?",
+            "flag": "",
+            "name": "mothest",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/c14bd82bc9c357b43fc820a8",
+                "username": "sunshinesilkmoth",
+                "displayname": "mothest",
+                "bio": "Bugs are friends and friends and friends.\n🧀Cheeseman my nearest and dearest🌞",
+                "beetleStats": {
+                    "cheese": 6868,
+                    "xp": 65409,
+                    "beetles": 322
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216817,
+            "time": 1761288096,
+            "body": "there is big beetle to catch ",
+            "flag": "",
+            "name": "RemiliaRabbi",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/a6d7d98614e158de583b5b23",
+                "username": "rabbikamile",
+                "displayname": "RemiliaRabbi",
+                "bio": "beetle game CEO🪲 地表最强奶酪领主🧀 annoying kike✡️",
+                "beetleStats": {
+                    "cheese": 1889,
+                    "xp": 111770,
+                    "beetles": 926
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216818,
+            "time": 1761288100,
+            "body": "i left my percs in agartha",
+            "flag": "",
+            "name": "oshuajayzo",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": [
+                {
+                    "emoji": 0,
+                    "count": 0
+                },
+                {
+                    "emoji": 1,
+                    "count": 1
+                },
+                {
+                    "emoji": 2,
+                    "count": 0
+                },
+                {
+                    "emoji": 3,
+                    "count": 0
+                },
+                {
+                    "emoji": 4,
+                    "count": 0
+                },
+                {
+                    "emoji": 5,
+                    "count": 0
+                },
+                {
+                    "emoji": 6,
+                    "count": 0
+                },
+                {
+                    "emoji": 7,
+                    "count": 0
+                }
+            ],
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/83b68a25fd0830cabcf5368b",
+                "username": "oshuajayzo",
+                "displayname": "oshuajayzo",
+                "bio": "This user is BiB (back in business)\n\n\u0026 claims that the usage of acronyms is immaculate.",
+                "beetleStats": {
+                    "cheese": 3617,
+                    "xp": 42468,
+                    "beetles": 238
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216819,
+            "time": 1761288107,
+            "body": "😎",
+            "flag": "",
+            "name": "virtue",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/a11ecc66aa9beab9692b2967",
+                "username": "virtue",
+                "displayname": "virtue",
+                "bio": "i htink i smell a choeese (¬`‸´¬) …ᘛ⁐̤ᕐᐷ 🧀\n\n ‎ ",
+                "beetleStats": {
+                    "cheese": 806,
+                    "xp": 125562,
+                    "beetles": 1096
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216821,
+            "time": 1761288144,
+            "body": "DO YOU ENJOY THE TASTE OF CHEESE?",
+            "flag": "",
+            "name": "EXHAUST",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": [
+                {
+                    "emoji": 0,
+                    "count": 0
+                },
+                {
+                    "emoji": 1,
+                    "count": 0
+                },
+                {
+                    "emoji": 2,
+                    "count": 3
+                },
+                {
+                    "emoji": 3,
+                    "count": 0
+                },
+                {
+                    "emoji": 4,
+                    "count": 0
+                },
+                {
+                    "emoji": 5,
+                    "count": 0
+                },
+                {
+                    "emoji": 6,
+                    "count": 0
+                },
+                {
+                    "emoji": 7,
+                    "count": 0
+                }
+            ],
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/molady/7560",
+                "username": "exhaust",
+                "displayname": "EXHAUST",
+                "bio": "This user dreams of a world without TV, music, photography, computer screens, headphones, audio and video games.",
+                "beetleStats": {
+                    "cheese": 2809,
+                    "xp": 57893,
+                    "beetles": 360
+                }
+            }
+        },
+        {
+            "editing": true,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216822,
+            "time": 1761288144,
+            "body": "",
+            "flag": "",
+            "name": "Nightjar",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/veryinternetperson/614",
+                "username": "nightjar",
+                "displayname": "Nightjar",
+                "bio": "This user loves cute existential risk",
+                "beetleStats": {
+                    "cheese": 306,
+                    "xp": 130152,
+                    "beetles": 1049
+                }
+            }
+        },
+        {
+            "editing": true,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216823,
+            "time": 1761288144,
+            "body": "",
+            "flag": "",
+            "name": "❤︎(˶˃ ᵕ ˂˶)❤︎",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/veryinternetperson/4622",
+                "username": "fizzie",
+                "displayname": "❤︎(˶˃ ᵕ ˂˶)❤︎",
+                "bio": "⊱ ────── {.⋅ ✯ ⋅.} ────── ⊰\nIn the name of God | \nRemilia Chief Network Angel | \nDo not engage with me, \nI am better as a concept. | \n𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼",
+                "beetleStats": {
+                    "cheese": 6135,
+                    "xp": 91777,
+                    "beetles": 590
+                }
+            }
+        },
+        {
+            "editing": true,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216824,
+            "time": 1761288144,
+            "body": "",
+            "flag": "",
+            "name": "Nightjar",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/veryinternetperson/614",
+                "username": "nightjar",
+                "displayname": "Nightjar",
+                "bio": "This user loves cute existential risk",
+                "beetleStats": {
+                    "cheese": 306,
+                    "xp": 130152,
+                    "beetles": 1049
+                }
+            }
+        },
+        {
+            "editing": true,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216825,
+            "time": 1761288145,
+            "body": "",
+            "flag": "",
+            "name": "Lex",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/c72965854d33862aad4a52f8",
+                "username": "chudjakswife",
+                "displayname": "Lex",
+                "bio": "I met my soulmate on Remilia Net | i adore him sm\n",
+                "beetleStats": {
+                    "cheese": 6573,
+                    "xp": 73282,
+                    "beetles": 384
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216826,
+            "time": 1761288145,
+            "body": "all my homeys hate the antichrist",
+            "flag": "",
+            "name": "❤︎(˶˃ ᵕ ˂˶)❤︎",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/veryinternetperson/4622",
+                "username": "fizzie",
+                "displayname": "❤︎(˶˃ ᵕ ˂˶)❤︎",
+                "bio": "⊱ ────── {.⋅ ✯ ⋅.} ────── ⊰\nIn the name of God | \nRemilia Chief Network Angel | \nDo not engage with me, \nI am better as a concept. | \n𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼",
+                "beetleStats": {
+                    "cheese": 6135,
+                    "xp": 91777,
+                    "beetles": 590
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216827,
+            "time": 1761288145,
+            "body": "hell",
+            "flag": "",
+            "name": "blees",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/f479575beb674c662baa0e61",
+                "username": "blees",
+                "displayname": "blees",
+                "bio": "This user is permitted three hours of computer time every day.",
+                "beetleStats": {
+                    "cheese": 3524,
+                    "xp": 46790,
+                    "beetles": 283
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216828,
+            "time": 1761288145,
+            "body": ":3",
+            "flag": "",
+            "name": "Lex",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/c72965854d33862aad4a52f8",
+                "username": "chudjakswife",
+                "displayname": "Lex",
+                "bio": "I met my soulmate on Remilia Net | i adore him sm\n",
+                "beetleStats": {
+                    "cheese": 6573,
+                    "xp": 73282,
+                    "beetles": 384
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216829,
+            "time": 1761288145,
+            "body": "rerw",
+            "flag": "",
+            "name": "Nightjar",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/veryinternetperson/614",
+                "username": "nightjar",
+                "displayname": "Nightjar",
+                "bio": "This user loves cute existential risk",
+                "beetleStats": {
+                    "cheese": 306,
+                    "xp": 130152,
+                    "beetles": 1049
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216830,
+            "time": 1761288154,
+            "body": "I am a beetol so yes",
+            "flag": "",
+            "name": "mothest",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": [
+                {
+                    "emoji": 0,
+                    "count": 0
+                },
+                {
+                    "emoji": 1,
+                    "count": 0
+                },
+                {
+                    "emoji": 2,
+                    "count": 0
+                },
+                {
+                    "emoji": 3,
+                    "count": 0
+                },
+                {
+                    "emoji": 4,
+                    "count": 0
+                },
+                {
+                    "emoji": 5,
+                    "count": 0
+                },
+                {
+                    "emoji": 6,
+                    "count": 0
+                },
+                {
+                    "emoji": 7,
+                    "count": 0
+                }
+            ],
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/c14bd82bc9c357b43fc820a8",
+                "username": "sunshinesilkmoth",
+                "displayname": "mothest",
+                "bio": "Bugs are friends and friends and friends.\n🧀Cheeseman my nearest and dearest🌞",
+                "beetleStats": {
+                    "cheese": 6868,
+                    "xp": 65409,
+                    "beetles": 322
+                }
+            }
+        },
+        {
+            "editing": true,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216831,
+            "time": 1761288218,
+            "body": "W",
+            "flag": "",
+            "name": "EXHAUST",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/molady/7560",
+                "username": "exhaust",
+                "displayname": "EXHAUST",
+                "bio": "This user dreams of a world without TV, music, photography, computer screens, headphones, audio and video games.",
+                "beetleStats": {
+                    "cheese": 2809,
+                    "xp": 57893,
+                    "beetles": 360
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216832,
+            "time": 1761288218,
+            "body": "these fuck ass green beatles smh",
+            "flag": "",
+            "name": "Lex",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/c72965854d33862aad4a52f8",
+                "username": "chudjakswife",
+                "displayname": "Lex",
+                "bio": "I met my soulmate on Remilia Net | i adore him sm\n",
+                "beetleStats": {
+                    "cheese": 6573,
+                    "xp": 73282,
+                    "beetles": 384
+                }
+            }
+        },
+        {
+            "editing": true,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216833,
+            "time": 1761288219,
+            "body": "",
+            "flag": "",
+            "name": "virtue",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/a11ecc66aa9beab9692b2967",
+                "username": "virtue",
+                "displayname": "virtue",
+                "bio": "i htink i smell a choeese (¬`‸´¬) …ᘛ⁐̤ᕐᐷ 🧀\n\n ‎ ",
+                "beetleStats": {
+                    "cheese": 806,
+                    "xp": 125562,
+                    "beetles": 1096
+                }
+            }
+        },
+        {
+            "editing": true,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216834,
+            "time": 1761288219,
+            "body": "",
+            "flag": "",
+            "name": "virtue",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/a11ecc66aa9beab9692b2967",
+                "username": "virtue",
+                "displayname": "virtue",
+                "bio": "i htink i smell a choeese (¬`‸´¬) …ᘛ⁐̤ᕐᐷ 🧀\n\n ‎ ",
+                "beetleStats": {
+                    "cheese": 806,
+                    "xp": 125562,
+                    "beetles": 1096
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216835,
+            "time": 1761288250,
+            "body": "Welcome to RemiliaNET global chat, milady. Happy chatting.",
+            "flag": "",
+            "name": "mr_Hanzo0",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/6993c8bf3ae7f7c751bb18b9",
+                "username": "hanzo0",
+                "displayname": "mr_Hanzo0",
+                "bio": "goatfooking galore",
+                "beetleStats": {
+                    "cheese": 721,
+                    "xp": 88552,
+                    "beetles": 631
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216836,
+            "time": 1761288270,
+            "body": "TEST",
+            "flag": "",
+            "name": "virtue",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/a11ecc66aa9beab9692b2967",
+                "username": "virtue",
+                "displayname": "virtue",
+                "bio": "i htink i smell a choeese (¬`‸´¬) …ᘛ⁐̤ᕐᐷ 🧀\n\n ‎ ",
+                "beetleStats": {
+                    "cheese": 806,
+                    "xp": 125562,
+                    "beetles": 1096
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216837,
+            "time": 1761288271,
+            "body": "SUCCESS! YOU JUST CAUGHT A Green Beetle! +26 XP",
+            "flag": "",
+            "name": "Lex",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/c72965854d33862aad4a52f8",
+                "username": "chudjakswife",
+                "displayname": "Lex",
+                "bio": "I met my soulmate on Remilia Net | i adore him sm\n",
+                "beetleStats": {
+                    "cheese": 6573,
+                    "xp": 73282,
+                    "beetles": 384
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216838,
+            "time": 1761288271,
+            "body": "*Welcome to RemiliaNET global chat, milady. Happy chatting.*",
+            "flag": "",
+            "name": "Lutfiy",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/antimiladies/8998",
+                "username": "lutfiy",
+                "displayname": "Lutfiy",
+                "bio": "This user is ugly but cute.",
+                "beetleStats": {
+                    "cheese": 871,
+                    "xp": 11759,
+                    "beetles": 58
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216839,
+            "time": 1761288284,
+            "body": "Bought a gem retart and its not showing up, isn't it really SAD pee pee pingus?",
+            "flag": "",
+            "name": "amiki",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/molady/1350",
+                "username": "ami",
+                "displayname": "amiki",
+                "bio": "This user is progressing at his own pace, do not bully him.",
+                "beetleStats": {
+                    "cheese": 1481,
+                    "xp": 88565,
+                    "beetles": 666
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216840,
+            "time": 1761288289,
+            "body": "Welcome to RemiliaNET global chat, milady. Happy chatting.",
+            "flag": "",
+            "name": "mr_Hanzo0",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/6993c8bf3ae7f7c751bb18b9",
+                "username": "hanzo0",
+                "displayname": "mr_Hanzo0",
+                "bio": "goatfooking galore",
+                "beetleStats": {
+                    "cheese": 721,
+                    "xp": 88552,
+                    "beetles": 631
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216841,
+            "time": 1761288298,
+            "body": "i like to collect beetles while chatting with my friends it is very fun",
+            "flag": "",
+            "name": "RemiliaRabbi",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/a6d7d98614e158de583b5b23",
+                "username": "rabbikamile",
+                "displayname": "RemiliaRabbi",
+                "bio": "beetle game CEO🪲 地表最强奶酪领主🧀 annoying kike✡️",
+                "beetleStats": {
+                    "cheese": 1889,
+                    "xp": 111770,
+                    "beetles": 926
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216842,
+            "time": 1761288299,
+            "body": "Beetols are delicious ",
+            "flag": "",
+            "name": "mr_Hanzo0",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/6993c8bf3ae7f7c751bb18b9",
+                "username": "hanzo0",
+                "displayname": "mr_Hanzo0",
+                "bio": "goatfooking galore",
+                "beetleStats": {
+                    "cheese": 721,
+                    "xp": 88552,
+                    "beetles": 631
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216843,
+            "time": 1761288309,
+            "body": "agree",
+            "flag": "",
+            "name": "Lutfiy",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/antimiladies/8998",
+                "username": "lutfiy",
+                "displayname": "Lutfiy",
+                "bio": "This user is ugly but cute.",
+                "beetleStats": {
+                    "cheese": 871,
+                    "xp": 11759,
+                    "beetles": 58
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216844,
+            "time": 1761288318,
+            "body": "What a fag",
+            "flag": "",
+            "name": "-Payback-",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/67df39058afa50bcfcf34e73",
+                "username": "_payback_",
+                "displayname": "-Payback-",
+                "bio": "Marinara maximalist 🇮🇹🍝🇮🇹\n",
+                "beetleStats": {
+                    "cheese": 244,
+                    "xp": 104951,
+                    "beetles": 876
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216845,
+            "time": 1761288322,
+            "body": "do not eat the beetle ",
+            "flag": "",
+            "name": "virtue",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/a11ecc66aa9beab9692b2967",
+                "username": "virtue",
+                "displayname": "virtue",
+                "bio": "i htink i smell a choeese (¬`‸´¬) …ᘛ⁐̤ᕐᐷ 🧀\n\n ‎ ",
+                "beetleStats": {
+                    "cheese": 806,
+                    "xp": 125562,
+                    "beetles": 1096
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216846,
+            "time": 1761288328,
+            "body": "SUCCESS! YOU JUST CAUGHT A Purple Beetle! +91 XP",
+            "flag": "",
+            "name": "Lex",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/c72965854d33862aad4a52f8",
+                "username": "chudjakswife",
+                "displayname": "Lex",
+                "bio": "I met my soulmate on Remilia Net | i adore him sm\n",
+                "beetleStats": {
+                    "cheese": 6573,
+                    "xp": 73282,
+                    "beetles": 384
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216847,
+            "time": 1761288341,
+            "body": "im tired boss",
+            "flag": "",
+            "name": "oshuajayzo",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/83b68a25fd0830cabcf5368b",
+                "username": "oshuajayzo",
+                "displayname": "oshuajayzo",
+                "bio": "This user is BiB (back in business)\n\n\u0026 claims that the usage of acronyms is immaculate.",
+                "beetleStats": {
+                    "cheese": 3617,
+                    "xp": 42468,
+                    "beetles": 238
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216848,
+            "time": 1761288362,
+            "body": "Purple beetol hell",
+            "flag": "",
+            "name": "mr_Hanzo0",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/6993c8bf3ae7f7c751bb18b9",
+                "username": "hanzo0",
+                "displayname": "mr_Hanzo0",
+                "bio": "goatfooking galore",
+                "beetleStats": {
+                    "cheese": 721,
+                    "xp": 88552,
+                    "beetles": 631
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216849,
+            "time": 1761288373,
+            "body": "Crunchy beetle bars",
+            "flag": "",
+            "name": "amiki",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/molady/1350",
+                "username": "ami",
+                "displayname": "amiki",
+                "bio": "This user is progressing at his own pace, do not bully him.",
+                "beetleStats": {
+                    "cheese": 1481,
+                    "xp": 88565,
+                    "beetles": 666
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216850,
+            "time": 1761288373,
+            "body": "Welcome to RemiliaNET global chat, milady. Happy chatting.\n",
+            "flag": "",
+            "name": "vita",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/9e4ac2bc8f80df511dd7e03e",
+                "username": "vita",
+                "displayname": "vita",
+                "bio": "This user was subsumed in the sea of information.",
+                "beetleStats": {
+                    "cheese": 4330,
+                    "xp": 48040,
+                    "beetles": 206
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216851,
+            "time": 1761288377,
+            "body": "i do be that way",
+            "flag": "",
+            "name": "oshuajayzo",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/83b68a25fd0830cabcf5368b",
+                "username": "oshuajayzo",
+                "displayname": "oshuajayzo",
+                "bio": "This user is BiB (back in business)\n\n\u0026 claims that the usage of acronyms is immaculate.",
+                "beetleStats": {
+                    "cheese": 3617,
+                    "xp": 42468,
+                    "beetles": 238
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216852,
+            "time": 1761288383,
+            "body": "Everyone is gonna eat ze beetol",
+            "flag": "",
+            "name": "mr_Hanzo0",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": [
+                {
+                    "emoji": 0,
+                    "count": 0
+                },
+                {
+                    "emoji": 1,
+                    "count": 3
+                },
+                {
+                    "emoji": 2,
+                    "count": 0
+                },
+                {
+                    "emoji": 3,
+                    "count": 0
+                },
+                {
+                    "emoji": 4,
+                    "count": 0
+                },
+                {
+                    "emoji": 5,
+                    "count": 0
+                },
+                {
+                    "emoji": 6,
+                    "count": 0
+                },
+                {
+                    "emoji": 7,
+                    "count": 0
+                }
+            ],
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/6993c8bf3ae7f7c751bb18b9",
+                "username": "hanzo0",
+                "displayname": "mr_Hanzo0",
+                "bio": "goatfooking galore",
+                "beetleStats": {
+                    "cheese": 721,
+                    "xp": 88552,
+                    "beetles": 631
+                }
+            }
+        },
+        {
+            "editing": true,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216853,
+            "time": 1761288400,
+            "body": "",
+            "flag": "",
+            "name": "oshuajayzo",
+            "trip": "",
+            "image": {
+                "spoiler": false,
+                "audio": false,
+                "video": true,
+                "file_type": 1,
+                "thumb_type": 16,
+                "length": 0,
+                "dims": [
+                    523,
+                    720,
+                    108,
+                    150
+                ],
+                "size": 531505,
+                "artist": "",
+                "title": "",
+                "md5": "MwND5vqiOJKjJERP2IgmLA",
+                "sha1": "1de580a767a193b42eaaf205447653eb1342d214",
+                "name": "20251024064640"
+            },
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/83b68a25fd0830cabcf5368b",
+                "username": "oshuajayzo",
+                "displayname": "oshuajayzo",
+                "bio": "This user is BiB (back in business)\n\n\u0026 claims that the usage of acronyms is immaculate.",
+                "beetleStats": {
+                    "cheese": 3617,
+                    "xp": 42468,
+                    "beetles": 238
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216854,
+            "time": 1761288401,
+            "body": "WHATCHU KNOW ABOUT / TEST / $UwU",
+            "flag": "",
+            "name": "🐦‍⬛🐦‍⬛Birds🐦‍⬛🐦‍⬛",
+            "trip": "",
+            "image": {
+                "spoiler": false,
+                "audio": false,
+                "video": true,
+                "file_type": 1,
+                "thumb_type": 16,
+                "length": 0,
+                "dims": [
+                    358,
+                    44,
+                    150,
+                    18
+                ],
+                "size": 12105,
+                "artist": "",
+                "title": "",
+                "md5": "bOAk1YEqj8lPIYPzpM6nZg",
+                "sha1": "4c9e8cc162a07558b08b393682dd4b0d3d360d34",
+                "name": "20251024064641"
+            },
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/veryinternetperson/2120",
+                "username": "birds",
+                "displayname": "🐦‍⬛🐦‍⬛Birds🐦‍⬛🐦‍⬛",
+                "bio": "Push \"asd\" keys all at once for fun stuff!",
+                "beetleStats": {
+                    "cheese": 3406,
+                    "xp": 106269,
+                    "beetles": 768
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216855,
+            "time": 1761288436,
+            "body": "need frens",
+            "flag": "",
+            "name": "Robapuros",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/milady/1687",
+                "username": "robapuros",
+                "displayname": "Robapuros",
+                "bio": "This user is god remixed.",
+                "beetleStats": {
+                    "cheese": 727,
+                    "xp": 81266,
+                    "beetles": 588
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216856,
+            "time": 1761288454,
+            "body": "Beetol highly nutritional ",
+            "flag": "",
+            "name": "mr_Hanzo0",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/6993c8bf3ae7f7c751bb18b9",
+                "username": "hanzo0",
+                "displayname": "mr_Hanzo0",
+                "bio": "goatfooking galore",
+                "beetleStats": {
+                    "cheese": 721,
+                    "xp": 88552,
+                    "beetles": 631
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216857,
+            "time": 1761288474,
+            "body": "their friendship is nutritional for the sovl",
+            "flag": "",
+            "name": "mothest",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/c14bd82bc9c357b43fc820a8",
+                "username": "sunshinesilkmoth",
+                "displayname": "mothest",
+                "bio": "Bugs are friends and friends and friends.\n🧀Cheeseman my nearest and dearest🌞",
+                "beetleStats": {
+                    "cheese": 6868,
+                    "xp": 65409,
+                    "beetles": 322
+                }
+            }
+        },
+        {
+            "editing": false,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216858,
+            "time": 1761288494,
+            "body": "Beetles are a good source of protein, with some species containing up to 70% protein on a dry weight basis, are also rich in minerals like iron, zinc and potassium.",
+            "flag": "",
+            "name": "❤︎(˶˃ ᵕ ˂˶)❤︎",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/veryinternetperson/4622",
+                "username": "fizzie",
+                "displayname": "❤︎(˶˃ ᵕ ˂˶)❤︎",
+                "bio": "⊱ ────── {.⋅ ✯ ⋅.} ────── ⊰\nIn the name of God | \nRemilia Chief Network Angel | \nDo not engage with me, \nI am better as a concept. | \n𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼𖤣𖥧𖡼𓋼𖤣𖥧𓋼𓍊𖡼",
+                "beetleStats": {
+                    "cheese": 6135,
+                    "xp": 91777,
+                    "beetles": 590
+                }
+            }
+        },
+        {
+            "editing": true,
+            "sage": false,
+            "shiny": false,
+            "auth": 0,
+            "id": 216859,
+            "time": 1761288514,
+            "body": "Protei",
+            "flag": "",
+            "name": "mr_Hanzo0",
+            "trip": "",
+            "image": null,
+            "links": null,
+            "commands": null,
+            "moderation": null,
+            "reactions": null,
+            "op": 0,
+            "user": {
+                "rich": true,
+                "pfpUrl": "https://pfp.remilia.com/pfp/default/6993c8bf3ae7f7c751bb18b9",
+                "username": "hanzo0",
+                "displayname": "mr_Hanzo0",
+                "bio": "goatfooking galore",
+                "beetleStats": {
+                    "cheese": 721,
+                    "xp": 88552,
+                    "beetles": 631
+                }
+            }
+        }
+    ]
+}
+
+
+curl 'https://www.remilia.com/beetle/api/action/beetleHunt' \
+  -H 'accept: */*' \
+  -H 'accept-language: fr-FR,fr;q=0.8' \
+  -H 'authorization: Bearer eyJhbGciOiJFZERTQSIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJCeVd1a055eWpjNjJvZndpbHhObFc5NGo2MG52V1Ziel9XMzcyZDR0QnZNIn0.eyJleHAiOjE3NjE0MTcxMjEsImlhdCI6MTc2MTI0NDMyMSwiYXV0aF90aW1lIjoxNzYxMjQ0MzIxLCJqdGkiOiI2YWQwOGZmOC04Nzg3LTQ1MDgtYTZjNi1hN2I0ZTUyZDdhNzMiLCJpc3MiOiJodHRwczovL3Nzby5yZW1pbGlhLm9yZy9yZWFsbXMvcmVtaWxpYSIsImF1ZCI6ImFjY291bnQiLCJzdWIiOiI2YzJjNDE3Zi03OTI0LTRkZTMtODFmZS0yZWY4MTE1ODkxMGQiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJwcm9maWxlIiwic2lkIjoiNzZkZTRjOTMtZmJiNi00NjM4LTljZTgtNTgzMTQ2ZjQ1MGU1IiwiYWNyIjoiMCIsImFsbG93ZWQtb3JpZ2lucyI6WyIqIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJvZmZsaW5lX2FjY2VzcyIsImRlZmF1bHQtcm9sZXMtcmVtaWxpYSIsInVtYV9hdXRob3JpemF0aW9uIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBlbWFpbCIsInJpY2hfZGF0YSI6IntcImRpc3BsYXlVc2VybmFtZVwiOlwibWFvXCIsXCJwZnBcIjp7XCJwcm9qZWN0XCI6XCJWZXJ5SW50ZXJuZXRQZXJzb25cIixcImlkXCI6XCIyNjA4XCJ9LFwicGZwVXJsXCI6XCJodHRwczovL3BmcC5yZW1pbGlhLmNvbS9wZnAvdmVyeWludGVybmV0cGVyc29uLzI2MDhcIixcImRpc3BsYXlOYW1lXCI6XCJtYU8gWlwiLFwidGhlbWVcIjpcImNvbG9yXCIsXCJjb3ZlclwiOlwiTW9vblwiLFwiY29sb3JcIjoyNjgsXCJvbmJvYXJkZWRcIjp0cnVlfSIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwiYW1yIjpbXSwiZW1haWwiOiJ0aWVsYWZhbWlsbGUuZXRoQGdtYWlsLmNvbSJ9.T2T6h_4C1IET4MpdLJL2UgFgsSBo5BTE4Aoo5W5zY7Rrnuc7EvPDgylIlZUBcePYIDcL3MCQFyNKzEoKr6_rDg' \
+  -H 'content-type: application/json' \
+  -b 'profile.sid=s%3A-VajUBiJo0KjAN1YnROXgyRjf7kfaOJl.v%2B431QYa556JqAD4bFnvOSj9t%2BG3mzrh5HEQh5kSYts; beetle.sid=s%3As_NhCefa6YGh-z_yPZUKcEOe2mgO5CeK.bRz2NDs9cUTaWfVl%2BqmCOIMG3VwSIFwSIyhcY%2Bkx20A' \
+  -H 'origin: https://www.remilia.com' \
+  -H 'priority: u=1, i' \
+  -H 'referer: https://www.remilia.com/home?cartridge=beetle' \
+  -H 'sec-ch-ua: "Brave";v="141", "Not?A_Brand";v="8", "Chromium";v="141"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "macOS"' \
+  -H 'sec-fetch-dest: empty' \
+  -H 'sec-fetch-mode: cors' \
+  -H 'sec-fetch-site: same-origin' \
+  -H 'sec-gpc: 1' \
+  -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36' \
+  --data-raw '{}'
+
+  {
+    "success": true,
+    "result": {
+        "success": true,
+        "beetle": "green",
+        "beetle_name": "Green Beetle",
+        "xp": 96,
+        "catchVideoInfo": {
+            "src": "/videos/green-catch_rZcKY64IXc3Kcq4xvSj5TFFT1oI0Yv.mp4",
+            "poster": "/videos/posters/green_catch_poster.webp",
+            "loop": false
+        },
+        "beetleCard": {
+            "beetle_name": "Green Beetle",
+            "girl_name": "Green Beetle Girl",
+            "species": "Tansy beetle",
+            "species_latin": "Chrysolina graminis",
+            "icon": "/images/beetle/icons/green_beetle_58aSFARnSNX8bkszT9XFlElSfkRhv1.png",
+            "background": "/images/beetle/backgrounds/green_beetle_bg_i10GpIPcrHcr7FIA4ghWuDgq17EhHQ.webp",
+            "character": "/images/beetle/characters/green_beetle_girl_71LTcC4pidBjX2Q5y1RxeC4OpYEO2w.webp"
+        }
+    },
+    "user": {
+        "id": "6c2c417f-7924-4de3-81fe-2ef81158910d",
+        "cheese": 740,
+        "xp": 32580,
+        "level": 28,
+        "inventory": {
+            "green": 159,
+            "ladybug": 36,
+            "monarch": 3,
+            "pond": 6,
+            "bombardier": 1,
+            "purple": 27
+        },
+        "discovered": [
+            "green",
+            "ladybug",
+            "monarch",
+            "pond",
+            "bombardier",
+            "purple"
+        ],
+        "streaks": {
+            "ubc": 6,
+            "lastClaim": 1761284463522,
+            "lousyBeetle": 0,
+            "pityCounter": 3
+        },
+        "beetleHuntsUsed": 1,
+        "lastBeetleHuntDate": 1761313071813,
+        "levelInfo": {
+            "xpInCurrentLevel": -1692,
+            "xpForNextLevel": 36569,
+            "xpNeededForNext": 3989,
+            "progressPercent": -73.66129734436221
+        },
+        "cooldowns": {
+            "catchBeetle": 1346337,
+            "claimUBC": 37328176
+        }
+    }
+}
+
+curl 'https://www.remilia.com/beetle/api/cooldowns' \
+  -H 'accept: */*' \
+  -H 'accept-language: fr-FR,fr;q=0.8' \
+  -H 'authorization: Bearer eyJhbGciOiJFZERTQSIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJCeVd1a055eWpjNjJvZndpbHhObFc5NGo2MG52V1Ziel9XMzcyZDR0QnZNIn0.eyJleHAiOjE3NjE0MTcxMjEsImlhdCI6MTc2MTI0NDMyMSwiYXV0aF90aW1lIjoxNzYxMjQ0MzIxLCJqdGkiOiI2YWQwOGZmOC04Nzg3LTQ1MDgtYTZjNi1hN2I0ZTUyZDdhNzMiLCJpc3MiOiJodHRwczovL3Nzby5yZW1pbGlhLm9yZy9yZWFsbXMvcmVtaWxpYSIsImF1ZCI6ImFjY291bnQiLCJzdWIiOiI2YzJjNDE3Zi03OTI0LTRkZTMtODFmZS0yZWY4MTE1ODkxMGQiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJwcm9maWxlIiwic2lkIjoiNzZkZTRjOTMtZmJiNi00NjM4LTljZTgtNTgzMTQ2ZjQ1MGU1IiwiYWNyIjoiMCIsImFsbG93ZWQtb3JpZ2lucyI6WyIqIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJvZmZsaW5lX2FjY2VzcyIsImRlZmF1bHQtcm9sZXMtcmVtaWxpYSIsInVtYV9hdXRob3JpemF0aW9uIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBlbWFpbCIsInJpY2hfZGF0YSI6IntcImRpc3BsYXlVc2VybmFtZVwiOlwibWFvXCIsXCJwZnBcIjp7XCJwcm9qZWN0XCI6XCJWZXJ5SW50ZXJuZXRQZXJzb25cIixcImlkXCI6XCIyNjA4XCJ9LFwicGZwVXJsXCI6XCJodHRwczovL3BmcC5yZW1pbGlhLmNvbS9wZnAvdmVyeWludGVybmV0cGVyc29uLzI2MDhcIixcImRpc3BsYXlOYW1lXCI6XCJtYU8gWlwiLFwidGhlbWVcIjpcImNvbG9yXCIsXCJjb3ZlclwiOlwiTW9vblwiLFwiY29sb3JcIjoyNjgsXCJvbmJvYXJkZWRcIjp0cnVlfSIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwiYW1yIjpbXSwiZW1haWwiOiJ0aWVsYWZhbWlsbGUuZXRoQGdtYWlsLmNvbSJ9.T2T6h_4C1IET4MpdLJL2UgFgsSBo5BTE4Aoo5W5zY7Rrnuc7EvPDgylIlZUBcePYIDcL3MCQFyNKzEoKr6_rDg' \
+  -b 'profile.sid=s%3A-VajUBiJo0KjAN1YnROXgyRjf7kfaOJl.v%2B431QYa556JqAD4bFnvOSj9t%2BG3mzrh5HEQh5kSYts; beetle.sid=s%3As_NhCefa6YGh-z_yPZUKcEOe2mgO5CeK.bRz2NDs9cUTaWfVl%2BqmCOIMG3VwSIFwSIyhcY%2Bkx20A' \
+  -H 'if-none-match: W/"6e-J4NJJLgKSZqpofG/MZ6dSiFIq+I"' \
+  -H 'priority: u=1, i' \
+  -H 'referer: https://www.remilia.com/home?cartridge=beetle' \
+  -H 'sec-ch-ua: "Brave";v="141", "Not?A_Brand";v="8", "Chromium";v="141"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "macOS"' \
+  -H 'sec-fetch-dest: empty' \
+  -H 'sec-fetch-mode: cors' \
+  -H 'sec-fetch-site: same-origin' \
+  -H 'sec-gpc: 1' \
+  -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
+
+Request URL
+https://www.remilia.com/beetle/api/cooldowns
+Request Method
+GET
+Status Code
+200 OK
+Remote Address
+143.198.48.43:443
+Referrer Policy
+strict-origin-when-cross-origin
+content-length
+98
+content-security-policy
+base-uri 'self'; connect-src 'self' https://sso.remilia.org https://miladychan.org https://boards.miladychan.org https://property.remilia.com https://pfp.remilia.com wss://www.remilia.com wss://sso.remilia.org wss://miladychan.org wss://boards.miladychan.org local.adguard.org ws://local.adguard.org wss://local.adguard.org; default-src 'self' local.adguard.org data:; font-src 'self' data:; form-action 'self'; frame-ancestors 'self'; img-src 'self' data: https: blob: local.adguard.org; object-src 'none'; script-src 'self' 'unsafe-inline' local.adguard.org; style-src 'self' 'unsafe-inline' local.adguard.org; upgrade-insecure-requests ; worker-src 'self' blob:
+content-type
+application/json; charset=utf-8
+date
+Fri, 24 Oct 2025 13:37:52 GMT
+etag
+W/"62-5Pl0hiUuKr9FObjj4R0Bt91LJp8"
+referrer-policy
+strict-origin-when-cross-origin
+strict-transport-security
+max-age=31536000; includeSubDomains; preload
+via
+1.1 Caddy
+x-content-type-options
+nosniff
+x-environment
+production
+x-frame-options
+SAMEORIGIN
+x-powered-by
+Express
+x-xss-protection
+1; mode=block
+:authority
+www.remilia.com
+:method
+GET
+:path
+/beetle/api/cooldowns
+:scheme
+https
+accept
+*/*
+accept-encoding
+gzip, deflate, br, zstd
+accept-language
+fr-FR,fr;q=0.8
+authorization
+Bearer eyJhbGciOiJFZERTQSIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJCeVd1a055eWpjNjJvZndpbHhObFc5NGo2MG52V1Ziel9XMzcyZDR0QnZNIn0.eyJleHAiOjE3NjE0MTcxMjEsImlhdCI6MTc2MTI0NDMyMSwiYXV0aF90aW1lIjoxNzYxMjQ0MzIxLCJqdGkiOiI2YWQwOGZmOC04Nzg3LTQ1MDgtYTZjNi1hN2I0ZTUyZDdhNzMiLCJpc3MiOiJodHRwczovL3Nzby5yZW1pbGlhLm9yZy9yZWFsbXMvcmVtaWxpYSIsImF1ZCI6ImFjY291bnQiLCJzdWIiOiI2YzJjNDE3Zi03OTI0LTRkZTMtODFmZS0yZWY4MTE1ODkxMGQiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJwcm9maWxlIiwic2lkIjoiNzZkZTRjOTMtZmJiNi00NjM4LTljZTgtNTgzMTQ2ZjQ1MGU1IiwiYWNyIjoiMCIsImFsbG93ZWQtb3JpZ2lucyI6WyIqIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJvZmZsaW5lX2FjY2VzcyIsImRlZmF1bHQtcm9sZXMtcmVtaWxpYSIsInVtYV9hdXRob3JpemF0aW9uIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBlbWFpbCIsInJpY2hfZGF0YSI6IntcImRpc3BsYXlVc2VybmFtZVwiOlwibWFvXCIsXCJwZnBcIjp7XCJwcm9qZWN0XCI6XCJWZXJ5SW50ZXJuZXRQZXJzb25cIixcImlkXCI6XCIyNjA4XCJ9LFwicGZwVXJsXCI6XCJodHRwczovL3BmcC5yZW1pbGlhLmNvbS9wZnAvdmVyeWludGVybmV0cGVyc29uLzI2MDhcIixcImRpc3BsYXlOYW1lXCI6XCJtYU8gWlwiLFwidGhlbWVcIjpcImNvbG9yXCIsXCJjb3ZlclwiOlwiTW9vblwiLFwiY29sb3JcIjoyNjgsXCJvbmJvYXJkZWRcIjp0cnVlfSIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwiYW1yIjpbXSwiZW1haWwiOiJ0aWVsYWZhbWlsbGUuZXRoQGdtYWlsLmNvbSJ9.T2T6h_4C1IET4MpdLJL2UgFgsSBo5BTE4Aoo5W5zY7Rrnuc7EvPDgylIlZUBcePYIDcL3MCQFyNKzEoKr6_rDg
+cookie
+profile.sid=s%3A-VajUBiJo0KjAN1YnROXgyRjf7kfaOJl.v%2B431QYa556JqAD4bFnvOSj9t%2BG3mzrh5HEQh5kSYts; beetle.sid=s%3As_NhCefa6YGh-z_yPZUKcEOe2mgO5CeK.bRz2NDs9cUTaWfVl%2BqmCOIMG3VwSIFwSIyhcY%2Bkx20A
+if-none-match
+W/"6e-J4NJJLgKSZqpofG/MZ6dSiFIq+I"
+priority
+u=1, i
+referer
+https://www.remilia.com/home?cartridge=beetle
+sec-ch-ua
+"Brave";v="141", "Not?A_Brand";v="8", "Chromium";v="141"
+sec-ch-ua-mobile
+?0
+sec-ch-ua-platform
+"macOS"
+sec-fetch-dest
+empty
+sec-fetch-mode
+cors
+sec-fetch-site
+same-origin
+sec-gpc
+1
+user-agent
+Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+
+  {
+    "cooldowns": {
+        "catchBeetle": 1346086,
+        "claimUBC": 37327925
+    },
+    "huntInfo": {
+        "huntsUsed": 1,
+        "resetTime": 0
+    }
+}

@@ -1,0 +1,1649 @@
+//! Beetle Hunt Bot - Refactored
+//!
+//! This application provides automated interactions with the Beetle game API,
+//! including beetle catching, cheese claiming, friend management, and more.
+
+mod config;
+mod models;
+mod utils;
+
+use anyhow::Result;
+use config::{load_auth_token, load_remilia_cookies};
+use models::{
+    auth::*, beetle::*, database::FriendsDatabase, feed::FeedActivity, profile::*, socket::*,
+};
+use reqwest::{header, Client};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
+use std::time::{SystemTime, UNIX_EPOCH};
+use tokio::signal;
+use tokio::time::{interval, Duration};
+use utils::{format_duration, generate_socket_timestamp};
+
+// ===== API CLIENT =====
+
+struct BeetleApiClient {
+    client: Client,
+    auth_token: String,
+    profile_sid: String,
+    beetle_sid: String,
+}
+
+impl BeetleApiClient {
+    fn new(auth_token: &str, profile_sid: &str, beetle_sid: &str) -> Result<Self> {
+        let mut headers = header::HeaderMap::new();
+        headers.insert(
+            header::AUTHORIZATION,
+            header::HeaderValue::from_str(&format!("Bearer {}", auth_token))?,
+        );
+
+        let client = Client::builder()
+            .cookie_store(true)
+            .gzip(true)
+            .brotli(true)
+            .deflate(true)
+            .user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36")
+            .timeout(Duration::from_secs(30))
+            .build()?;
+
+        Ok(Self {
+            client,
+            auth_token: auth_token.to_string(),
+            profile_sid: profile_sid.to_string(),
+            beetle_sid: beetle_sid.to_string(),
+        })
+    }
+
+    fn build_headers_remilia(&self) -> header::HeaderMap {
+        let mut headers = header::HeaderMap::new();
+
+        let cookie_str = format!(
+            "profile.sid={}; beetle.sid={}",
+            self.profile_sid, self.beetle_sid
+        );
+        headers.insert(
+            header::COOKIE,
+            header::HeaderValue::from_str(&cookie_str)
+                .unwrap_or_else(|_| header::HeaderValue::from_static("")),
+        );
+        headers.insert(
+            header::CONTENT_TYPE,
+            header::HeaderValue::from_static("application/json"),
+        );
+        headers.insert(
+            header::AUTHORIZATION,
+            header::HeaderValue::from_str(&format!("Bearer {}", self.auth_token))
+                .unwrap_or_else(|_| header::HeaderValue::from_static("")),
+        );
+
+        headers.insert(
+            header::REFERER,
+            header::HeaderValue::from_static("https://www.remilia.com/"),
+        );
+        headers.insert(header::ACCEPT, header::HeaderValue::from_static("*/*"));
+        headers.insert(
+            header::ORIGIN,
+            header::HeaderValue::from_static("https://www.remilia.com"),
+        );
+
+        headers.insert(
+            header::USER_AGENT,
+            header::HeaderValue::from_static(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            ),
+        );
+
+        headers
+    }
+
+    // fn build_headers_beetle(&self) -> header::HeaderMap {
+    //     let mut headers = header::HeaderMap::new();
+
+    //     headers.insert(
+    //         header::COOKIE,
+    //         header::HeaderValue::from_str(&format!("beetle.sid={}", self.beetle_sid))
+    //             .unwrap_or_else(|_| header::HeaderValue::from_static("")),
+    //     );
+
+    //     headers.insert(
+    //         header::REFERER,
+    //         header::HeaderValue::from_static("https://www.remilia.com/beetle"),
+    //     );
+
+    //     headers.insert(
+    //         header::ORIGIN,
+    //         header::HeaderValue::from_static("https://www.remilia.com"),
+    //     );
+
+    //     headers
+    // }
+
+    fn build_headers_beetle(&self) -> header::HeaderMap {
+        let mut headers = header::HeaderMap::new();
+
+        headers.insert(
+            header::AUTHORIZATION,
+            header::HeaderValue::from_str(&self.auth_token).unwrap(),
+        );
+        headers.insert(
+            header::ORIGIN,
+            header::HeaderValue::from_static("https://remilia.com"),
+        );
+        headers.insert(
+            header::REFERER,
+            header::HeaderValue::from_static("https://remilia.com/"),
+        );
+        headers.insert(header::ACCEPT, header::HeaderValue::from_static("*/*"));
+        headers.insert(
+            "sec-fetch-site",
+            header::HeaderValue::from_static("cross-site"),
+        );
+
+        headers
+    }
+
+    async fn socket_init(&self) -> Result<String> {
+        let timestamp = generate_socket_timestamp();
+        let url = format!(
+            "https://www.remilia.com/identity/socket.io/?EIO=4&transport=polling&t={}",
+            timestamp
+        );
+
+        let response = self
+            .client
+            .get(&url)
+            .headers(self.build_headers_remilia())
+            .send()
+            .await?;
+
+        let body = response.text().await?;
+
+        if let Some(json_start) = body.find('{') {
+            let json_str = &body[json_start..];
+            let init_response: SocketInitResponse = serde_json::from_str(json_str)?;
+            return Ok(init_response.sid);
+        }
+
+        anyhow::bail!("Failed to parse socket init response")
+    }
+
+    async fn get_feed_activity(&self) -> Result<Vec<FeedActivity>> {
+        let sid = self.socket_init().await?;
+        let timestamp = generate_socket_timestamp();
+
+        let url = format!(
+            "https://www.remilia.com/identity/socket.io/?EIO=4&transport=polling&t={}&sid={}",
+            timestamp, sid
+        );
+
+        let response = self
+            .client
+            .get(&url)
+            .headers(self.build_headers_remilia())
+            .send()
+            .await?;
+
+        let body = response.text().await?;
+        self.parse_feed_response(&body)
+    }
+
+    fn parse_feed_response(&self, body: &str) -> Result<Vec<FeedActivity>> {
+        let mut activities = Vec::new();
+
+        for line in body.lines() {
+            if line.starts_with("42") {
+                if let Some(json_start) = line.find('[') {
+                    let json_str = &line[json_start..];
+
+                    if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(json_str) {
+                        if let Some(arr) = parsed.as_array() {
+                            if arr.len() >= 2 && arr[0].as_str() == Some("activity") {
+                                if let Ok(activity) = serde_json::from_value(arr[1].clone()) {
+                                    activities.push(activity);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(activities)
+    }
+
+    async fn get_auth_status(&mut self) -> Result<AuthStatusResponse> {
+        let response = self
+            .client
+            .get("https://www.remilia.com/auth/status") // Note: www.remilia.com
+            .headers(self.build_headers_remilia())
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            anyhow::bail!(
+                "Failed to get auth status: HTTP {}",
+                response.status().as_u16()
+            );
+        }
+
+        let auth_response: AuthStatusResponse = response.json().await?;
+        Ok(auth_response)
+    }
+s
+    async fn get_profile(&self, username: &str) -> Result<ProfileResponse> {
+        let url = format!("https://www.remilia.com/api/profile/~{}", username);
+
+        let response = self
+            .client
+            .get(&url)
+            .headers(self.build_headers_remilia())
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            anyhow::bail!("Failed to get profile: HTTP {}", response.status().as_u16());
+        }
+
+        let profile: ProfileResponse = response.json().await?;
+        Ok(profile)
+    }
+
+    async fn get_cooldowns(&self) -> Result<CooldownsResponse> {
+        let response = self
+            .client
+            .get("https://www.remilia.com/beetle/api/cooldowns")
+            .headers(self.build_headers_beetle())
+            .send()
+            .await?;
+
+        // Check if we're being redirected to auth (cookies/token expired)
+        let final_url = response.url().to_string();
+        if final_url.contains("sso.remilia.org") || final_url.contains("/auth") {
+            anyhow::bail!(
+                "🔒 Authentication failed! Your cookies or auth token have expired.\n\
+                 Redirected to: {}\n\n\
+                 Please:\n\
+                 1. Log into remilia.com in your browser\n\
+                 2. Export fresh 'profile.sid' and 'beetle.sid' cookies\n\
+                 3. Update remilia_cookies.json\n\
+                 4. Get a new auth token and update auth_2.txt",
+                final_url
+            );
+        }
+
+        if !response.status().is_success() {
+            anyhow::bail!(
+                "Failed to get cooldowns: HTTP {}",
+                response.status().as_u16()
+            );
+        }
+
+        let body_text = response.text().await?;
+        
+        let cooldowns: CooldownsResponse = serde_json::from_str(&body_text)
+            .map_err(|e| anyhow::anyhow!(
+                "Failed to parse cooldowns JSON: {}\nResponse body (first 500 chars): {}", 
+                e, 
+                &body_text.chars().take(500).collect::<String>()
+            ))?;
+        Ok(cooldowns)
+    }
+
+    pub async fn get_beetle_user(&self) -> Result<User> {
+        let response = self
+            .client
+            .get("https://www.remilia.com/beetle/api/user")
+            .headers(self.build_headers_beetle())
+            .send()
+            .await?;
+
+        let user: User = response.json().await?;
+        Ok(user)
+    }
+
+    async fn beetle_hunt(&self) -> Result<BeetleHuntApiResponse> {
+        let request_body = serde_json::json!({});
+
+        let response = self
+            .client
+            .post("https://www.remilia.com/beetle/api/beetle/hunt")
+            .headers(self.build_headers_beetle())
+            .json(&request_body)
+            .send()
+            .await?;
+
+        let body_text = response.text().await?;
+        let hunt_response: BeetleHuntApiResponse = serde_json::from_str(&body_text)?;
+        Ok(hunt_response)
+    }
+
+    async fn beetle_catch(&self) -> Result<CatchBeetleApiResponse> {
+        let request_body = serde_json::json!({});
+
+        let response = self
+            .client
+            .post("https://www.remilia.com/beetle/api/beetle/catch")
+            .headers(self.build_headers_beetle())
+            .json(&request_body)
+            .send()
+            .await?;
+
+        let catch_response: CatchBeetleApiResponse = response.json().await?;
+        Ok(catch_response)
+    }
+
+    async fn claim_ubc(&self) -> Result<ClaimUBCApiResponse> {
+        let request_body = serde_json::json!({});
+
+        let response = self
+            .client
+            .post("https://www.remilia.com/beetle/api/claim/ubc")
+            .headers(self.build_headers_beetle())
+            .json(&request_body)
+            .send()
+            .await?;
+
+        let claim_response: ClaimUBCApiResponse = response.json().await?;
+        Ok(claim_response)
+    }
+
+    async fn poke_user(&self, username: &str) -> Result<PokeResponse> {
+        #[derive(Debug, Serialize)]
+        #[serde(rename_all = "camelCase")]
+        struct PokeRequest {
+            poke_username: String,
+        }
+
+        let request_body = PokeRequest {
+            poke_username: username.to_string(),
+        };
+
+        let response = self
+            .client
+            .post("https://www.remilia.com/api/poke")
+            .headers(self.build_headers_remilia())
+            .json(&request_body)
+            .send()
+            .await?;
+
+        let poke_response: PokeResponse = response.json().await?;
+        Ok(poke_response)
+    }
+
+    async fn send_friend_request(&self, username: &str) -> Result<FriendsResponse> {
+        #[derive(Debug, Serialize)]
+        #[serde(rename_all = "camelCase")]
+        struct FriendsRequest {
+            friend_username: String,
+        }
+
+        let request_body = FriendsRequest {
+            friend_username: username.to_string(),
+        };
+
+        let response = self
+            .client
+            .post("https://www.remilia.com/api/friends/request")
+            .headers(self.build_headers_remilia())
+            .json(&request_body)
+            .send()
+            .await?;
+
+        let friends_response: FriendsResponse = response.json().await?;
+        Ok(friends_response)
+    }
+
+    async fn get_friends_page(&self, page: u32, limit: u32) -> Result<FriendsListResponse> {
+        let url = format!(
+            "https://www.remilia.com/api/friends/list?page={}&limit={}",
+            page, limit
+        );
+
+        let response = self
+            .client
+            .get(&url)
+            .headers(self.build_headers_remilia())
+            .send()
+            .await?;
+
+        let friends_list: FriendsListResponse = response.json().await?;
+        Ok(friends_list)
+    }
+
+    async fn scrape_all_friends(&self, db_file: &str) -> Result<()> {
+        println!("🔍 Scraping all friends from Remilia Jackson...\n");
+
+        let db = FriendsDatabase::new(db_file);
+        let limit = 50;
+        let mut page = 1;
+        let mut total_fetched = 0;
+        let mut all_friends = Vec::new();
+
+        loop {
+            print!("📄 Fetching page {}... ", page);
+            std::io::Write::flush(&mut std::io::stdout())?;
+
+            let response = self.get_friends_page(page, limit).await?;
+
+            let friends_count = response.friends.len();
+            println!("✅ Got {} friends", friends_count);
+
+            for friend in &response.friends {
+                all_friends.push(friend.display_username.clone());
+            }
+
+            total_fetched += friends_count;
+
+            if friends_count < limit as usize || total_fetched >= response.total as usize {
+                break;
+            }
+
+            page += 1;
+            tokio::time::sleep(Duration::from_millis(500)).await;
+        }
+
+        println!("\n📊 Total friends fetched: {}", total_fetched);
+        println!("💾 Syncing with database...\n");
+
+        let sync_stats = db.sync_with_friends(&all_friends)?;
+
+        println!("✅ Database sync complete!");
+        println!("   Initial count: {}", sync_stats.initial_count);
+        println!("   Added: {} new users", sync_stats.added);
+        println!("   Removed: {} unfriended users", sync_stats.removed);
+        println!("   Final count: {}", sync_stats.final_count);
+
+        Ok(())
+    }
+
+    async fn auto_poke_from_feed(&self, max_pokes: usize) -> Result<()> {
+        println!("🤖 Auto-poking from feed activity...\n");
+
+        let activities = self.get_feed_activity().await?;
+        println!("📰 Found {} feed activities", activities.len());
+
+        let mut poke_targets: Vec<String> = Vec::new();
+
+        for activity in &activities {
+            match activity {
+                FeedActivity::Poke { from, .. } => {
+                    if !poke_targets.contains(&from.username) {
+                        poke_targets.push(from.username.clone());
+                    }
+                }
+                FeedActivity::Friendship { users, .. } => {
+                    for user in users {
+                        if !poke_targets.contains(&user.username) {
+                            poke_targets.push(user.username.clone());
+                        }
+                    }
+                }
+            }
+        }
+
+        println!("🎯 Found {} unique users to poke", poke_targets.len());
+
+        let poke_count = std::cmp::min(max_pokes, poke_targets.len());
+        let mut successful_pokes = 0;
+
+        for username in poke_targets.iter().take(poke_count) {
+            print!("👉 Poking {}... ", username);
+            std::io::Write::flush(&mut std::io::stdout())?;
+
+            match self.poke_user(username).await {
+                Ok(response) => {
+                    if response.success {
+                        println!("✅");
+                        successful_pokes += 1;
+                    } else {
+                        println!("❌ Failed");
+                    }
+                }
+                Err(e) => println!("❌ Error: {}", e),
+            }
+
+            tokio::time::sleep(Duration::from_secs(2)).await;
+        }
+
+        println!("\n✅ Poked {}/{} users successfully", successful_pokes, poke_count);
+        Ok(())
+    }
+
+    async fn auto_poke_smart(
+        &self,
+        max_pokes: usize,
+        exclude_usernames: Vec<String>,
+    ) -> Result<()> {
+        println!("🧠 Smart auto-poking (most active users)...\n");
+
+        let activities = self.get_feed_activity().await?;
+        println!("📰 Analyzing {} feed activities", activities.len());
+
+        let mut user_activity_count: HashMap<String, usize> = HashMap::new();
+
+        for activity in &activities {
+            match activity {
+                FeedActivity::Poke { from, .. } => {
+                    *user_activity_count.entry(from.username.clone()).or_insert(0) += 1;
+                }
+                FeedActivity::Friendship { users, .. } => {
+                    for user in users {
+                        *user_activity_count.entry(user.username.clone()).or_insert(0) += 1;
+                    }
+                }
+            }
+        }
+
+        let mut user_activity_vec: Vec<_> = user_activity_count.into_iter().collect();
+        user_activity_vec.sort_by(|a, b| b.1.cmp(&a.1));
+
+        let poke_targets: Vec<String> = user_activity_vec
+            .iter()
+            .filter(|(username, _)| !exclude_usernames.contains(username))
+            .take(max_pokes)
+            .map(|(username, _)| username.clone())
+            .collect();
+
+        println!("🎯 Top {} active users to poke", poke_targets.len());
+
+        let mut successful_pokes = 0;
+
+        for (i, username) in poke_targets.iter().enumerate() {
+            let activity_count = user_activity_vec
+                .iter()
+                .find(|(u, _)| u == username)
+                .map(|(_, c)| c)
+                .unwrap_or(&0);
+
+            print!(
+                "👉 [{}/{}] Poking {} (activity: {})... ",
+                i + 1,
+                poke_targets.len(),
+                username,
+                activity_count
+            );
+            std::io::Write::flush(&mut std::io::stdout())?;
+
+            match self.poke_user(username).await {
+                Ok(response) => {
+                    if response.success {
+                        println!("✅");
+                        successful_pokes += 1;
+                    } else {
+                        println!("❌ Failed");
+                    }
+                }
+                Err(e) => println!("❌ Error: {}", e),
+            }
+
+            tokio::time::sleep(Duration::from_secs(2)).await;
+        }
+
+        println!(
+            "\n✅ Poked {}/{} users successfully",
+            successful_pokes,
+            poke_targets.len()
+        );
+        Ok(())
+    }
+
+    async fn auto_friends_from_feed(&self, max_friends: usize) -> Result<()> {
+        println!("🤝 Auto-friending from feed activity...\n");
+
+        let activities = self.get_feed_activity().await?;
+        println!("📰 Found {} feed activities", activities.len());
+
+        let mut friend_targets: Vec<String> = Vec::new();
+
+        for activity in &activities {
+            match activity {
+                FeedActivity::Poke { from, .. } => {
+                    if !friend_targets.contains(&from.username) {
+                        friend_targets.push(from.username.clone());
+                    }
+                }
+                FeedActivity::Friendship { users, .. } => {
+                    for user in users {
+                        if !friend_targets.contains(&user.username) {
+                            friend_targets.push(user.username.clone());
+                        }
+                    }
+                }
+            }
+        }
+
+        println!("🎯 Found {} unique users to friend", friend_targets.len());
+
+        let friend_count = std::cmp::min(max_friends, friend_targets.len());
+        let mut successful_requests = 0;
+
+        for username in friend_targets.iter().take(friend_count) {
+            print!("🤝 Sending friend request to {}... ", username);
+            std::io::Write::flush(&mut std::io::stdout())?;
+
+            match self.send_friend_request(username).await {
+                Ok(response) => {
+                    if response.success {
+                        println!("✅");
+                        successful_requests += 1;
+                    } else {
+                        println!("❌ Failed");
+                    }
+                }
+                Err(e) => println!("❌ Error: {}", e),
+            }
+
+            tokio::time::sleep(Duration::from_secs(2)).await;
+        }
+
+        println!(
+            "\n✅ Sent {}/{} friend requests successfully",
+            successful_requests, friend_count
+        );
+        Ok(())
+    }
+
+    async fn auto_poke_from_db(&self, db_file: &str, max_count: usize) -> Result<()> {
+        let db = FriendsDatabase::new(db_file);
+        let pokeable_users = db.get_pokeable_users()?;
+
+        if pokeable_users.is_empty() {
+            println!("❌ No users ready to poke (24h cooldown)");
+            return Ok(());
+        }
+
+        println!("🎯 Found {} pokeable users", pokeable_users.len());
+
+        let poke_count = std::cmp::min(max_count, pokeable_users.len());
+        let mut successful_pokes = 0;
+
+        for (i, username) in pokeable_users.iter().take(poke_count).enumerate() {
+            print!("👉 [{}/{}] Poking {}... ", i + 1, poke_count, username);
+            std::io::Write::flush(&mut std::io::stdout())?;
+
+            match self.poke_user(username).await {
+                Ok(response) => {
+                    if response.success {
+                        println!("✅");
+                        db.update_poke(username)?;
+                        successful_pokes += 1;
+                    } else {
+                        println!("❌ Failed");
+                    }
+                }
+                Err(e) => {
+                    if let Some(cooldown_secs) = Self::extract_cooldown_seconds(&e.to_string()) {
+                        println!("⏰ On cooldown ({} seconds)", cooldown_secs);
+                        db.update_poke_with_cooldown(username, cooldown_secs)?;
+                    } else {
+                        println!("❌ Error: {}", e);
+                    }
+                }
+            }
+
+            tokio::time::sleep(Duration::from_secs(2)).await;
+        }
+
+        println!("\n✅ Poked {}/{} users successfully", successful_pokes, poke_count);
+        Ok(())
+    }
+
+    async fn auto_friend_request_from_db(&self, db_file: &str, max_count: usize) -> Result<()> {
+        let db = FriendsDatabase::new(db_file);
+        let users_for_friend_request = db.get_users_for_friend_request()?;
+
+        if users_for_friend_request.is_empty() {
+            println!("❌ No users need friend requests");
+            return Ok(());
+        }
+
+        println!("🎯 Found {} users needing friend requests", users_for_friend_request.len());
+
+        let request_count = std::cmp::min(max_count, users_for_friend_request.len());
+        let mut successful_requests = 0;
+
+        for (i, username) in users_for_friend_request.iter().take(request_count).enumerate() {
+            print!(
+                "🤝 [{}/{}] Sending friend request to {}... ",
+                i + 1,
+                request_count,
+                username
+            );
+            std::io::Write::flush(&mut std::io::stdout())?;
+
+            match self.send_friend_request(username).await {
+                Ok(response) => {
+                    if response.success {
+                        println!("✅");
+                        db.mark_friend_request_sent(username)?;
+                        successful_requests += 1;
+                    } else {
+                        println!("❌ Failed");
+                    }
+                }
+                Err(e) => println!("❌ Error: {}", e),
+            }
+
+            tokio::time::sleep(Duration::from_secs(2)).await;
+        }
+
+        println!(
+            "\n✅ Sent {}/{} friend requests successfully",
+            successful_requests, request_count
+        );
+        Ok(())
+    }
+
+    async fn auto_engage_from_db_with_stats(
+        &self,
+        db_file: &str,
+        stats: &WorkerStats,
+    ) -> Result<(u64, u64)> {
+        let db = FriendsDatabase::new(db_file);
+
+        let pokeable_users = db.get_pokeable_users()?;
+        let users_for_friend_request = db.get_users_for_friend_request()?;
+
+        let mut pokes_done = 0u64;
+        let mut friends_done = 0u64;
+
+        if !pokeable_users.is_empty() {
+            let username = &pokeable_users[0];
+
+            match self.poke_user(username).await {
+                Ok(response) => {
+                    if response.success {
+                        db.update_poke(username)?;
+                        pokes_done = 1;
+                    }
+                }
+                Err(e) => {
+                    if let Some(cooldown_secs) = Self::extract_cooldown_seconds(&e.to_string()) {
+                        db.update_poke_with_cooldown(username, cooldown_secs)?;
+                    }
+                }
+            }
+
+            tokio::time::sleep(Duration::from_secs(2)).await;
+        }
+
+        if !users_for_friend_request.is_empty() {
+            let username = &users_for_friend_request[0];
+
+            match self.send_friend_request(username).await {
+                Ok(response) => {
+                    if response.success {
+                        db.mark_friend_request_sent(username)?;
+                        friends_done = 1;
+                    }
+                }
+                Err(_) => {}
+            }
+
+            tokio::time::sleep(Duration::from_secs(2)).await;
+        }
+
+        Ok((pokes_done, friends_done))
+    }
+
+    fn extract_cooldown_seconds(err_msg: &str) -> Option<i64> {
+        if let Some(start) = err_msg.find("for ") {
+            if let Some(end) = err_msg[start + 4..].find('s') {
+                return err_msg[start + 4..start + 4 + end].parse().ok();
+            }
+        }
+        None
+    }
+
+    pub async fn update_theme_to_dark(&mut self) -> Result<UpdateThemeResponse> {
+        let request_body = UpdateThemeRequest {
+            theme: "dark".to_string(),
+            color: 0,
+            cover: "default".to_string(),
+            pfp: ProfilePfp {
+                project: "milady".to_string(),
+                id: "0".to_string(),
+            },
+            display_name: "Your Name".to_string(),
+            username: "your_username".to_string(),
+        };
+
+        let response = self
+            .client
+            .post("https://www.remilia.com/api/profile/update")
+            .headers(self.build_headers_remilia())
+            .json(&request_body)
+            .send()
+            .await?;
+
+        let theme_response: UpdateThemeResponse = response.json().await?;
+        Ok(theme_response)
+    }
+}
+
+// ===== DISPLAY FUNCTIONS =====
+
+pub fn display_beetle_user(user: &User) {
+    println!("\n╔═══════════════════════════════════════════╗");
+    println!("║         🪲 BEETLE USER INFO               ║");
+    println!("╠═══════════════════════════════════════════╣");
+    println!("║ Level:                    {:>15} ║", user.level);
+    println!("║ XP:                       {:>15} ║", user.xp);
+    println!("║ Cheese:                   {:>15} 🧀║", user.cheese);
+    println!("║ Total Beetles:            {:>15} ║", user.total_beetles());
+    println!("╠═══════════════════════════════════════════╣");
+    println!("║ 📦 INVENTORY                              ║");
+    println!("╠═══════════════════════════════════════════╣");
+    println!("║ 🟢 Green:                 {:>15} ║", user.inventory.green);
+    println!("║ 🐞 Ladybug:               {:>15} ║", user.inventory.ladybug);
+    println!("║ 🦋 Monarch:               {:>15} ║", user.inventory.monarch);
+    println!("║ 🔵 Pond:                  {:>15} ║", user.inventory.pond);
+    println!("║ 💣 Bombardier:            {:>15} ║", user.inventory.bombardier);
+    println!("║ 🟣 Purple:                {:>15} ║", user.inventory.purple);
+    println!("║ 💀 Skull:                {:>15} ║", user.inventory.skull);
+    println!("╠═══════════════════════════════════════════╣");
+    println!("║ 🔥 STREAKS                                ║");
+    println!("╠═══════════════════════════════════════════╣");
+    println!("║ UBC Streak:               {:>15} ║", user.streaks.ubc);
+    println!("║ Lousy Beetle:             {:>15} ║", user.streaks.lousy_beetle);
+    println!("║ Pity Counter:             {:>15} ║", user.streaks.pity_counter);
+    println!("╠═══════════════════════════════════════════╣");
+    println!("║ 🎯 HUNTS                                  ║");
+    println!("╠═══════════════════════════════════════════╣");
+    println!("║ Hunts Used:               {:>15} ║", user.beetle_hunts_used);
+    println!("║ Hunts Remaining:          {:>15} ║", 3 - user.beetle_hunts_used);
+    println!("╠═══════════════════════════════════════════╣");
+    println!("║ ⏰ COOLDOWNS                              ║");
+    println!("╠═══════════════════════════════════════════╣");
+
+    if user.can_catch_beetle() {
+        println!("║ 🪲 Catch:                 {:>15} ║", "✅ Ready!");
+    } else {
+        let seconds = user.time_until_catch_ready();
+        println!("║ 🪲 Catch:                 {:>15} ║", format_duration(seconds));
+    }
+
+    if user.can_claim_ubc() {
+        println!("║ 🧀 UBC Claim:             {:>15} ║", "✅ Ready!");
+    } else {
+        let seconds = user.time_until_ubc_ready();
+        println!("║ 🧀 UBC Claim:             {:>15} ║", format_duration(seconds));
+    }
+
+    println!("╠═══════════════════════════════════════════╣");
+    println!("║ 📊 LEVEL PROGRESS                         ║");
+    println!("╠═══════════════════════════════════════════╣");
+    println!("║ XP Needed:                {:>15} ║", user.level_info.xp_needed_for_next);
+    println!("║ Progress:                 {:>14.1}% ║", user.level_info.progress_percent);
+    println!("╚═══════════════════════════════════════════╝\n");
+}
+
+fn display_auth_status(auth: &AuthStatusResponse) {
+    println!("\n════════════════════════════════════");
+    println!("🔐 AUTH STATUS");
+    println!("════════════════════════════════════");
+    println!(
+        "Authenticated: {}",
+        if auth.authenticated { "✅ Yes" } else { "❌ No" }
+    );
+
+    if let Some(user) = &auth.user {
+        println!("\n👤 User Info:");
+        println!("Username: ~{}", user.username);
+        println!("Display Name: {}", user.display_name);
+        println!("Pokes: {}", user.pokes);
+        println!("Page Views: {}", user.page_views);
+        println!("Friends: {}", user.friend_count);
+    } else {
+        println!("\n❌ Not authenticated");
+    }
+
+    println!("════════════════════════════════════\n");
+}
+
+fn display_profile(profile: &ProfileResponse) {
+    let user = &profile.user;
+
+    println!("\n════════════════════════════════════");
+    println!("👤 PROFILE: {}", user.display_name);
+    println!("════════════════════════════════════");
+    println!("Username: ~{}", user.username);
+    println!("PFP: {} #{}", user.pfp.project, user.pfp.id.as_ref().unwrap_or(&"N/A".to_string()));
+
+    if let Some(bio) = &user.bio {
+        println!("Bio: {}", bio);
+    }
+
+    println!("\n🎨 Appearance:");
+    println!("  Theme: {}", user.theme);
+    println!("  Cover: {}", user.cover);
+    println!("  Color: #{:06X}", user.color);
+
+    println!("\n📊 Stats:");
+    println!("  Pokes: 👆 {}", user.pokes);
+    println!("  Beetles: 🪲 {}", user.beetles);
+    println!("  Friends: 🤝 {}", user.friend_count);
+
+    if let Some(extra) = &profile.extra_context {
+        println!("\n🔗 Relationship:");
+        println!("  Friends: {}", if extra.are_friends { "✅ Yes" } else { "❌ No" });
+        println!("  Can Poke: {}", if extra.can_poke { "✅ Yes" } else { "❌ No" });
+        if extra.poke_cooldown_seconds > 0 {
+            println!("  Poke Cooldown: {} seconds", extra.poke_cooldown_seconds);
+        }
+        println!("  Mutual Friends: {}", extra.mutual_count);
+    }
+
+    println!("════════════════════════════════════\n");
+}
+
+fn display_cooldowns(response: &CooldownsResponse) {
+    println!("\n⏰ ===== COOLDOWNS =====");
+
+    let catch_beetle_seconds = response.cooldowns.catch_beetle / 1000;
+    if response.cooldowns.catch_beetle > 0 {
+        println!("🐞 Catch Beetle: {}", format_duration(catch_beetle_seconds));
+    } else {
+        println!("🐞 Catch Beetle: ✅ Ready!");
+    }
+
+    let claim_ubc_seconds = response.cooldowns.claim_ubc / 1000;
+    if response.cooldowns.claim_ubc > 0 {
+        println!("🎁 Claim UBC: {}", format_duration(claim_ubc_seconds));
+    } else {
+        println!("🎁 Claim UBC: ✅ Ready!");
+    }
+
+    println!("\n🎮 ===== HUNT INFO =====");
+    println!("Hunts Used Today: {}/3", response.hunt_info.hunts_used);
+    println!("Hunts Remaining: {}/3", 3 - response.hunt_info.hunts_used);
+
+    let reset_time_secs = response.hunt_info.reset_time / 1000;
+    let now = std::time::SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+
+    if reset_time_secs > now {
+        let time_until_reset = reset_time_secs - now;
+        println!("🔄 Hunts Reset In: {}", format_duration(time_until_reset));
+    } else {
+        println!("🔄 Hunts: ✅ Ready to reset!");
+    }
+}
+
+fn display_hunt_result(result: &BeetleHuntApiResponse) {
+    match result {
+        BeetleHuntApiResponse::Success { success, result, user } => {
+            println!("\n🎉 HUNT SUCCESS!");
+            println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            println!("🪲 Caught: {}", result.beetle_name);
+            println!("✨ Species: {}", result.beetle_card.species);
+            println!("⭐ XP Gained: +{}", result.xp);
+            println!("\n📊 Updated Stats:");
+            println!("   Level: {}", user.level);
+            println!("   Total XP: {}", user.xp);
+            println!("   Cheese: {} 🧀", user.cheese);
+            println!("   Hunts Used: {}/3", user.beetle_hunts_used);
+            println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+        }
+        BeetleHuntApiResponse::FailedHunt { success, result, user } => {
+            println!("\n❌ HUNT FAILED!");
+            println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            println!("Better luck next time!");
+            println!("   Hunts Used: {}/3", user.beetle_hunts_used);
+            println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+        }
+        BeetleHuntApiResponse::Error { success, error, user } => {
+            println!("\n❌ ERROR: {}", error);
+        }
+    }
+}
+
+fn display_catch_result(response: &CatchBeetleApiResponse) {
+    match response {
+        CatchBeetleApiResponse::Success { success, result, user } => {
+            println!("\n🎉 CATCH SUCCESS!");
+            println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            println!("🪲 Caught: {}", result.beetle_name);
+            println!("⭐ XP Gained: +{}", result.xp);
+            println!("⏰ Cooldown: {} seconds", result.cooldown_ms / 1000);
+            println!("\n📊 Updated Stats:");
+            println!("   Level: {}", user.level);
+            println!("   Total XP: {}", user.xp);
+            println!("   Cheese: {} 🧀", user.cheese);
+            println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+        }
+        CatchBeetleApiResponse::Error { success, error, user } => {
+            println!("\n❌ CATCH FAILED!");
+            println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            println!("Error: {}", error);
+            if let Some(cooldown) = extract_cooldown_from_error(error) {
+                println!("⏰ Cooldown remaining: {}", format_duration(cooldown));
+            }
+            println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+        }
+    }
+}
+
+fn display_claim_ubc_result(response: &ClaimUBCApiResponse) {
+    match response {
+        ClaimUBCApiResponse::Success { success, result, user } => {
+            println!("\n🎉 UBC CLAIM SUCCESS!");
+            println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            println!("🧀 Cheese Claimed: +{}", result.cheese);
+            println!("⭐ XP Gained: +{}", result.xp);
+            println!("🔥 Streak: {} days", result.streak);
+            println!("\n📊 Updated Stats:");
+            println!("   Level: {}", user.level);
+            println!("   Total XP: {}", user.xp);
+            println!("   Total Cheese: {} 🧀", user.cheese);
+            println!("   UBC Streak: {} 🔥", user.streaks.ubc);
+            println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+        }
+        ClaimUBCApiResponse::Error { success, error, user } => {
+            println!("\n❌ UBC CLAIM FAILED!");
+            println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            println!("Error: {}", error);
+            println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+        }
+    }
+}
+
+fn display_poke_result(response: &PokeResponse, username: &str) {
+    if response.success {
+        println!("✅ Successfully poked ~{}!", username);
+        println!("👉 They'll get a notification!");
+    } else {
+        println!("❌ Failed to poke ~{}", username);
+    }
+}
+
+fn display_feed_activity(activities: &[FeedActivity]) {
+    println!("\n📰 Recent Feed Activity ({} items)\n", activities.len());
+    println!("{}", "=".repeat(80));
+
+    for activity in activities {
+        match activity {
+            FeedActivity::Poke { from, to, .. } => {
+                println!("👉 {} poked {}", from.username, to.username);
+            }
+            FeedActivity::Friendship { users, .. } => {
+                let usernames: Vec<&str> = users.iter().map(|u| u.username.as_str()).collect();
+                println!("🤝 {} became friends", usernames.join(" & "));
+            }
+        }
+    }
+}
+
+fn extract_cooldown_from_error(error: &str) -> Option<u64> {
+    if let Some(start) = error.find("for ") {
+        if let Some(end) = error[start + 4..].find('s') {
+            return error[start + 4..start + 4 + end].parse().ok();
+        }
+    }
+    None
+}
+
+// ===== AUTO LOOPS =====
+
+async fn auto_hunt_loop(client: &BeetleApiClient) -> Result<()> {
+    loop {
+        println!("🎯 Checking if hunt is available...");
+
+        match client.get_cooldowns().await {
+            Ok(cooldowns) => {
+                if cooldowns.has_hunts_remaining() {
+                    println!("✅ Hunt available! Attempting hunt...");
+
+                    match client.beetle_hunt().await {
+                        Ok(result) => display_hunt_result(&result),
+                        Err(e) => println!("❌ Hunt failed: {}", e),
+                    }
+                } else {
+                    let wait_time = cooldowns.time_until_hunt_reset();
+                    println!("⏰ No hunts remaining. Waiting {} seconds...", wait_time);
+                    tokio::time::sleep(Duration::from_secs(wait_time)).await;
+                }
+            }
+            Err(e) => println!("❌ Failed to check cooldowns: {}", e),
+        }
+
+        tokio::time::sleep(Duration::from_secs(60)).await;
+    }
+}
+
+async fn auto_catch_loop(client: &BeetleApiClient) -> Result<()> {
+    loop {
+        println!("🪲 Checking if beetle catch is ready...");
+
+        match client.get_cooldowns().await {
+            Ok(cooldowns) => {
+                if cooldowns.can_beetle_catch() {
+                    println!("✅ Catch ready! Attempting catch...");
+
+                    match client.beetle_catch().await {
+                        Ok(result) => {
+                            display_catch_result(&result);
+
+                            if let CatchBeetleApiResponse::Success { result, .. } = result {
+                                let wait_time = result.cooldown_ms / 1000;
+                                println!("⏰ Waiting {} seconds for next catch...", wait_time);
+                                tokio::time::sleep(Duration::from_secs(wait_time)).await;
+                            }
+                        }
+                        Err(e) => {
+                            println!("❌ Catch failed: {}", e);
+                            tokio::time::sleep(Duration::from_secs(60)).await;
+                        }
+                    }
+                } else {
+                    let wait_time = cooldowns.time_until_beetle_ready();
+                    println!("⏰ Catch on cooldown. Waiting {} seconds...", wait_time);
+                    tokio::time::sleep(Duration::from_secs(wait_time)).await;
+                }
+            }
+            Err(e) => {
+                println!("❌ Failed to check cooldowns: {}", e);
+                tokio::time::sleep(Duration::from_secs(60)).await;
+            }
+        }
+    }
+}
+
+async fn auto_claim_ubc_loop(client: &BeetleApiClient) -> Result<()> {
+    loop {
+        println!("🧀 Checking if UBC claim is ready...");
+
+        match client.get_cooldowns().await {
+            Ok(cooldowns) => {
+                if cooldowns.can_claim_ubc() {
+                    println!("✅ UBC ready! Claiming cheese...");
+
+                    match client.claim_ubc().await {
+                        Ok(result) => {
+                            display_claim_ubc_result(&result);
+                            println!("⏰ Waiting 24 hours for next claim...");
+                            tokio::time::sleep(Duration::from_secs(86400)).await;
+                        }
+                        Err(e) => {
+                            println!("❌ Claim failed: {}", e);
+                            tokio::time::sleep(Duration::from_secs(3600)).await;
+                        }
+                    }
+                } else {
+                    let wait_time = cooldowns.time_until_ubc_ready();
+                    println!("⏰ UBC on cooldown. Waiting {} seconds...", wait_time);
+                    tokio::time::sleep(Duration::from_secs(wait_time)).await;
+                }
+            }
+            Err(e) => {
+                println!("❌ Failed to check cooldowns: {}", e);
+                tokio::time::sleep(Duration::from_secs(600)).await;
+            }
+        }
+    }
+}
+
+// ===== WORKER STATS =====
+
+#[derive(Clone)]
+struct WorkerStats {
+    beetle_catches_total: Arc<AtomicU64>,
+    beetle_catches_session: Arc<AtomicU64>,
+    cheese_claims_total: Arc<AtomicU64>,
+    cheese_claims_session: Arc<AtomicU64>,
+    pokes_total: Arc<AtomicU64>,
+    pokes_session: Arc<AtomicU64>,
+    friend_requests_total: Arc<AtomicU64>,
+    friend_requests_session: Arc<AtomicU64>,
+    last_beetle_catch: Arc<Mutex<Option<String>>>,
+    last_cheese_claim: Arc<Mutex<Option<u64>>>,
+    last_poke: Arc<Mutex<Option<String>>>,
+    last_friend_request: Arc<Mutex<Option<String>>>,
+    session_inventory: Arc<Mutex<SessionBeetleInventory>>,
+}
+
+impl WorkerStats {
+    fn new() -> Self {
+        Self {
+            beetle_catches_total: Arc::new(AtomicU64::new(0)),
+            beetle_catches_session: Arc::new(AtomicU64::new(0)),
+            cheese_claims_total: Arc::new(AtomicU64::new(0)),
+            cheese_claims_session: Arc::new(AtomicU64::new(0)),
+            pokes_total: Arc::new(AtomicU64::new(0)),
+            pokes_session: Arc::new(AtomicU64::new(0)),
+            friend_requests_total: Arc::new(AtomicU64::new(0)),
+            friend_requests_session: Arc::new(AtomicU64::new(0)),
+            last_beetle_catch: Arc::new(Mutex::new(None)),
+            last_cheese_claim: Arc::new(Mutex::new(None)),
+            last_poke: Arc::new(Mutex::new(None)),
+            last_friend_request: Arc::new(Mutex::new(None)),
+            session_inventory: Arc::new(Mutex::new(SessionBeetleInventory::default())),
+        }
+    }
+
+    fn record_beetle_catch(&self, beetle_name: String) {
+        self.beetle_catches_total.fetch_add(1, Ordering::SeqCst);
+        self.beetle_catches_session.fetch_add(1, Ordering::SeqCst);
+        *self.last_beetle_catch.lock().unwrap() = Some(beetle_name);
+    }
+
+    fn record_cheese_claim(&self, amount: u64) {
+        self.cheese_claims_total.fetch_add(1, Ordering::SeqCst);
+        self.cheese_claims_session.fetch_add(1, Ordering::SeqCst);
+        *self.last_cheese_claim.lock().unwrap() = Some(amount);
+    }
+
+    fn record_poke(&self, username: String) {
+        self.pokes_total.fetch_add(1, Ordering::SeqCst);
+        self.pokes_session.fetch_add(1, Ordering::SeqCst);
+        *self.last_poke.lock().unwrap() = Some(username);
+    }
+
+    fn record_friend_request(&self, username: String) {
+        self.friend_requests_total.fetch_add(1, Ordering::SeqCst);
+        self.friend_requests_session.fetch_add(1, Ordering::SeqCst);
+        *self.last_friend_request.lock().unwrap() = Some(username);
+    }
+
+    fn update_inventory(&self, new_inventory: BeetleInventory) {
+        let mut inventory = self.session_inventory.lock().unwrap();
+        inventory.update(new_inventory);
+    }
+}
+
+// ===== WORKER FUNCTIONS =====
+
+async fn beetle_auto_claim_worker(client: Arc<BeetleApiClient>, stats: WorkerStats) -> Result<()> {
+    let mut interval = interval(Duration::from_secs(30));
+
+    loop {
+        interval.tick().await;
+        println!("🪲 Checking for beetle catch...");
+
+        match client.get_cooldowns().await {
+            Ok(cooldowns) => {
+                if cooldowns.can_beetle_catch() {
+                    match client.beetle_catch().await {
+                        Ok(CatchBeetleApiResponse::Success { success, result, user }) => {
+                            stats.record_beetle_catch(result.beetle_name.clone());
+                            stats.update_inventory(user.inventory);
+                        }
+                        Ok(CatchBeetleApiResponse::Error { .. }) => {}
+                        Err(_) => {}
+                    }
+                }
+            }
+            Err(_) => {}
+        }
+    }
+}
+
+async fn cheese_auto_claim_worker(client: Arc<BeetleApiClient>, stats: WorkerStats) -> Result<()> {
+    let mut interval = interval(Duration::from_secs(3600));
+
+    loop {
+        interval.tick().await;
+        println!("🧀 Checking for UBC claim...");
+
+        match client.get_cooldowns().await {
+            Ok(cooldowns) => {
+                if cooldowns.can_claim_ubc() {
+                    match client.claim_ubc().await {
+                        Ok(ClaimUBCApiResponse::Success { success, result, user }) => {
+                            stats.record_cheese_claim(result.cheese as u64);
+                        }
+                        Ok(ClaimUBCApiResponse::Error { .. }) => {}
+                        Err(_) => {}
+                    }
+                }
+            }
+            Err(_) => {}
+        }
+    }
+}
+
+async fn daily_poke_worker(client: Arc<BeetleApiClient>, stats: WorkerStats) -> Result<()> {
+    let mut interval = interval(Duration::from_secs(300));
+    let db_file = "friends_db.json";
+    
+    loop {
+        interval.tick().await;
+        println!("👉 Checking for daily poke...");
+
+        let _ = client.auto_engage_from_db_with_stats(db_file, &stats).await;
+    }
+}
+
+async fn status_dashboard_worker(stats: WorkerStats, client: Arc<BeetleApiClient>) -> Result<()> {
+    let mut interval = interval(Duration::from_secs(10));
+
+    loop {
+        interval.tick().await;
+
+        print!("\x1B[2J\x1B[1;1H");
+
+        println!("╔════════════════════════════════════════════════════════════╗");
+        println!("║         🤖 BEETLE HUNT BOT - WORKER DASHBOARD             ║");
+        println!("╚════════════════════════════════════════════════════════════╝");
+
+        println!("\n📊 SESSION STATISTICS");
+        println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        println!(
+            "🪲 Beetle Catches: {} (session: {})",
+            stats.beetle_catches_total.load(Ordering::SeqCst),
+            stats.beetle_catches_session.load(Ordering::SeqCst)
+        );
+        println!(
+            "🧀 Cheese Claims:  {} (session: {})",
+            stats.cheese_claims_total.load(Ordering::SeqCst),
+            stats.cheese_claims_session.load(Ordering::SeqCst)
+        );
+        println!(
+            "👉 Pokes:          {} (session: {})",
+            stats.pokes_total.load(Ordering::SeqCst),
+            stats.pokes_session.load(Ordering::SeqCst)
+        );
+        println!(
+            "🤝 Friend Reqs:    {} (session: {})",
+            stats.friend_requests_total.load(Ordering::SeqCst),
+            stats.friend_requests_session.load(Ordering::SeqCst)
+        );
+
+        if let Ok(user) = client.get_beetle_user().await {
+            println!("\n💰 CURRENT RESOURCES");
+            println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            println!("Level: {} | XP: {} | Cheese: {} 🧀", user.level, user.xp, user.cheese);
+            println!("Total Beetles: {}", user.total_beetles());
+        }
+
+        println!("\n⌨️  Press Ctrl+C to stop all workers");
+    }
+}
+
+async fn run_all_workers(client: BeetleApiClient) -> Result<()> {
+    println!("🤖 ===== STARTING ALL WORKERS =====\n");
+
+    let client = Arc::new(client);
+    let stats = WorkerStats::new();
+
+    let stats_clone = stats.clone();
+    let client_clone = client.clone();
+    let dashboard_handle = tokio::spawn(async move {
+        status_dashboard_worker(stats_clone, client_clone).await
+    });
+
+    let stats_clone = stats.clone();
+    let client_clone = client.clone();
+    let beetle_handle = tokio::spawn(async move {
+        beetle_auto_claim_worker(client_clone, stats_clone).await
+    });
+
+    let stats_clone = stats.clone();
+    let client_clone = client.clone();
+    let cheese_handle = tokio::spawn(async move {
+        cheese_auto_claim_worker(client_clone, stats_clone).await
+    });
+
+    let stats_clone = stats.clone();
+    let client_clone = client.clone();
+    let poke_handle = tokio::spawn(async move {
+        daily_poke_worker(client_clone, stats_clone).await
+    });
+
+    tokio::select! {
+        _ = signal::ctrl_c() => {
+            println!("\n\n🛑 Shutting down all workers...");
+        }
+        _ = dashboard_handle => {}
+        _ = beetle_handle => {}
+        _ = cheese_handle => {}
+        _ = poke_handle => {}
+    }
+
+    Ok(())
+}
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    println!("🚀 Beetle Hunt Bot Starting...\n");
+
+    let token = load_auth_token()?;
+    let (profile_sid, beetle_sid) = load_remilia_cookies()?;
+    let mut client = BeetleApiClient::new(&token, &profile_sid, &beetle_sid)?;
+
+    display_menu();
+
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input)?;
+    let choice: u32 = input.trim().parse().unwrap_or(1);
+
+    match choice {
+        1 => {
+            let cooldowns = client.get_cooldowns().await?;
+            display_cooldowns(&cooldowns);
+        }
+        2 => {
+            let result = client.beetle_catch().await?;
+            display_catch_result(&result);
+        }
+        3 => {
+            let result = client.beetle_hunt().await?;
+            display_hunt_result(&result);
+        }
+        4 => {
+            auto_catch_loop(&client).await?;
+        }
+        5 => {
+            auto_hunt_loop(&client).await?;
+        }
+        6 => {
+            let auth = client.get_auth_status().await?;
+            display_auth_status(&auth);
+        }
+        7 => {
+            print!("Enter your username: ");
+            std::io::Write::flush(&mut std::io::stdout())?;
+            let mut username = String::new();
+            std::io::stdin().read_line(&mut username)?;
+            let username = username.trim();
+
+            let profile = client.get_profile(username).await?;
+            display_profile(&profile);
+        }
+        8 => {
+            print!("Enter username to view: ");
+            std::io::Write::flush(&mut std::io::stdout())?;
+            let mut username = String::new();
+            std::io::stdin().read_line(&mut username)?;
+            let username = username.trim();
+
+            let profile = client.get_profile(username).await?;
+            display_profile(&profile);
+        }
+        9 => {
+            print!("Enter username to poke: ");
+            std::io::Write::flush(&mut std::io::stdout())?;
+            let mut username = String::new();
+            std::io::stdin().read_line(&mut username)?;
+            let username = username.trim();
+
+            let result = client.poke_user(username).await?;
+            display_poke_result(&result, username);
+        }
+        10 => {
+            let activities = client.get_feed_activity().await?;
+            display_feed_activity(&activities);
+        }
+        11 => {
+            print!("How many users to poke? (default 5): ");
+            std::io::Write::flush(&mut std::io::stdout())?;
+            let mut count_input = String::new();
+            std::io::stdin().read_line(&mut count_input)?;
+            let max_pokes = count_input.trim().parse().unwrap_or(5);
+
+            client.auto_poke_from_feed(max_pokes).await?;
+        }
+        12 => {
+            print!("How many users to poke? (default 5): ");
+            std::io::Write::flush(&mut std::io::stdout())?;
+            let mut count_input = String::new();
+            std::io::stdin().read_line(&mut count_input)?;
+            let max_pokes = count_input.trim().parse().unwrap_or(5);
+
+            client.auto_poke_smart(max_pokes, vec![]).await?;
+        }
+        13 => {
+            print!("How many friend requests to send? (default 5): ");
+            std::io::Write::flush(&mut std::io::stdout())?;
+            let mut count_input = String::new();
+            std::io::stdin().read_line(&mut count_input)?;
+            let max_friends = count_input.trim().parse().unwrap_or(5);
+
+            client.auto_friends_from_feed(max_friends).await?;
+        }
+        14 => {
+            auto_claim_ubc_loop(&client).await?;
+        }
+        15 => {
+            let db_file = "friends_db.json";
+            client.scrape_all_friends(db_file).await?;
+        }
+        16 => {
+            let db_file = "friends_db.json";
+            let db = FriendsDatabase::new(db_file);
+            let stats = db.get_stats()?;
+
+            println!("\n📊 DATABASE STATISTICS");
+            println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            println!("Total users: {}", stats.total_users);
+            println!("Poked at least once: {}", stats.poked_at_least_once);
+            println!("Pokeable now: {}", stats.pokeable_now);
+            println!("Friend requests sent: {}", stats.friend_requests_sent);
+            println!("Need friend request: {}", stats.need_friend_request);
+        }
+        17 => {
+            let db_file = "friends_db.json";
+            let db = FriendsDatabase::new(db_file);
+            let stats = db.get_stats()?;
+
+            println!("\n📊 ENHANCED DATABASE STATISTICS");
+            println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            println!("Total users: {}", stats.total_users);
+            println!("Poked at least once: {}", stats.poked_at_least_once);
+            println!("Pokeable now: {}", stats.pokeable_now);
+            println!("Friend requests sent: {}", stats.friend_requests_sent);
+            println!("Need friend request: {}", stats.need_friend_request);
+
+            if let Some(next_user) = db.get_next_pokeable_user()? {
+                println!("\n⏰ Next pokeable user:");
+                println!("   Username: {}", next_user.username);
+                println!(
+                    "   Time until pokeable: {}",
+                    format_duration(next_user.time_until_pokeable)
+                );
+            }
+        }
+        18 => {
+            print!("How many users to poke? (default 10): ");
+            std::io::Write::flush(&mut std::io::stdout())?;
+            let mut count_input = String::new();
+            std::io::stdin().read_line(&mut count_input)?;
+            let max_count = count_input.trim().parse().unwrap_or(10);
+
+            let db_file = "friends_db.json";
+            client.auto_poke_from_db(db_file, max_count).await?;
+        }
+        19 => {
+            print!("How many friend requests to send? (default 10): ");
+            std::io::Write::flush(&mut std::io::stdout())?;
+            let mut count_input = String::new();
+            std::io::stdin().read_line(&mut count_input)?;
+            let max_count = count_input.trim().parse().unwrap_or(10);
+
+            let db_file = "friends_db.json";
+            client.auto_friend_request_from_db(db_file, max_count).await?;
+        }
+        20 => {
+            print!("How many users to engage (poke + friend)? (default 10): ");
+            std::io::Write::flush(&mut std::io::stdout())?;
+            let mut count_input = String::new();
+            std::io::stdin().read_line(&mut count_input)?;
+            let max_count = count_input.trim().parse().unwrap_or(10);
+
+            let db_file = "friends_db.json";
+            let stats = WorkerStats::new();
+
+            for i in 0..max_count {
+                print!("[{}/{}] Engaging... ", i + 1, max_count);
+                std::io::Write::flush(&mut std::io::stdout())?;
+
+                match client.auto_engage_from_db_with_stats(db_file, &stats).await {
+                    Ok((pokes, friends)) => {
+                        println!("✅ (Pokes: {}, Friends: {})", pokes, friends);
+                    }
+                    Err(e) => println!("❌ Error: {}", e),
+                }
+
+                tokio::time::sleep(Duration::from_secs(3)).await;
+            }
+        }
+        21 => {
+            run_all_workers(client).await?;
+        }
+        22 => {
+            let user = client.get_beetle_user().await?;
+            println!("\n🧀 Cheese Count: {}", user.cheese);
+            display_beetle_user(&user);
+        }
+        23 => {
+            println!("🌙 Updating theme to dark mode...");
+            let result = client.update_theme_to_dark().await?;
+            if result.success {
+                println!("✅ Theme updated successfully!");
+            } else {
+                println!("❌ Theme update failed");
+            }
+        }
+        _ => {
+            println!("❌ Invalid option");
+        }
+    }
+
+    Ok(())
+}
+
+fn display_menu() {
+    println!("╔════════════════════════════════════════════╗");
+    println!("║        🪲 BEETLE HUNT BOT MENU            ║");
+    println!("╠════════════════════════════════════════════╣");
+    println!("║  1. Check cooldowns                        ║");
+    println!("║  2. Catch beetle (cooldown-based)          ║");
+    println!("║  3. Hunt beetles (daily limited)           ║");
+    println!("║  4. Auto-catch when ready (loop)           ║");
+    println!("║  5. Auto-hunt when ready (loop)            ║");
+    println!("║  6. View auth status                       ║");
+    println!("║  7. View profile (your own)                ║");
+    println!("║  8. View another user's profile            ║");
+    println!("║  9. Poke a user                            ║");
+    println!("║ 10. View feed activity                     ║");
+    println!("║ 11. Auto-poke from feed                    ║");
+    println!("║ 12. Auto-poke smart (most active)          ║");
+    println!("║ 13. Auto-friend from feed                  ║");
+    println!("║ 14. Auto-claim UBC (cheese) - loop         ║");
+    println!("║ 15. Scrape friends to DB                   ║");
+    println!("║ 16. View DB stats                          ║");
+    println!("║ 17. View enhanced DB stats                 ║");
+    println!("║ 18. Auto-poke from DB (24h cooldown)       ║");
+    println!("║ 19. Auto-friend request from DB            ║");
+    println!("║ 20. Auto-engage (poke + friend)            ║");
+    println!("║ 21. 🤖 Run ALL workers                     ║");
+    println!("║ 22. Get cheese count                       ║");
+    println!("║ 23. 🌙 Update theme to dark mode           ║");
+    println!("╚════════════════════════════════════════════╝");
+    print!("\nEnter option (1-23): ");
+    std::io::Write::flush(&mut std::io::stdout()).ok();
+}

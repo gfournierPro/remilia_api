@@ -13,6 +13,8 @@ use config::{load_auth_token, load_remilia_cookies};
 use models::{
     beetle::*, database::FriendsDatabase, profile::*,
 };
+use rand::rngs::OsRng;
+use rand::Rng;
 use reauth::{auto_reauth, is_sso_redirect};
 use reqwest::{header, Client, StatusCode};
 use serde::Deserialize;
@@ -672,47 +674,113 @@ impl BeetleApiClient {
     ) -> Result<(u64, u64)> {
         let db = FriendsDatabase::new(db_file);
         let pokeable = db.get_pokeable_users()?;
+        let users: Vec<String> = pokeable.into_iter().collect();
 
-        let mut pokes = 0u64;
-        let mut friends = 0u64;
+        if users.is_empty() {
+            println!("\n🎯 No pokeable users right now!");
 
-        for username in pokeable.iter().take(5) {
-            match self.poke_user(username).await {
-                Ok(response) => {
-                    if response.success {
+            // Show when next user will be available
+            if let Ok(Some(next)) = db.get_next_pokeable_user() {
+                let time_str = format_duration(next.time_until_pokeable);
+                let ready_at_str = format_timestamp(next.time_until_pokeable);
+
+                println!("\n╔═══════════════════════════════════════════╗");
+                println!("║      ⏰ NEXT POKEABLE USER                ║");
+                println!("╠═══════════════════════════════════════════╣");
+                println!("║ Username:          {:>22} ║", next.username);
+                println!("║ Ready in:          {:>22} ║", time_str);
+                println!("║ Ready at:          {:>22} ║", ready_at_str);
+                println!("╚═══════════════════════════════════════════╝\n");
+            }
+
+            return Ok((0, 0));
+        }
+
+        println!("\n🚀 ===== AUTO-ENGAGE FROM DATABASE =====");
+        println!("📊 Processing {} users\n", users.len());
+
+        let total_seconds_in_24h = 10.0 * 60.0 * 60.0;
+        let db_count = db.count()? as f64;
+        let mean_delay = (total_seconds_in_24h / db_count.max(1.0)).max(5.0);
+
+        let min_delay = (mean_delay * 0.6).max(2.0);
+        let max_delay = mean_delay * 1.4;
+
+        println!(
+            "⏱️  Delay range: {:.1}s - {:.1}s (mean: {:.1}s)\n",
+            min_delay, max_delay, mean_delay
+        );
+
+        let mut poke_success = 0;
+        let mut poke_on_cooldown = 0;
+        let mut friend_success = 0;
+        let mut rng = OsRng;
+
+        for (i, username) in users.iter().enumerate() {
+            println!("[{}/{}] 🎯 Processing ~{}...", i + 1, users.len(), username);
+
+            if let Some(record) = db.get_user(username)? {
+                match self.poke_user(username).await {
+                    Ok(response) if response.success => {
+                        println!("   👉 Poked!");
                         db.update_poke(username)?;
-                        pokes += 1;
+                        poke_success += 1;
                     }
+                    Err(e) => {
+                        let err_msg = e.to_string();
+                        if err_msg.contains("Still on cooldown") {
+                            println!("   ⏳ On cooldown - updating timestamp");
+                            if let Some(cooldown_secs) = extract_cooldown_seconds(&err_msg) {
+                                db.update_poke_with_cooldown(username, cooldown_secs as i64)?;
+                                poke_on_cooldown += 1;
+                            } else {
+                                db.update_poke(username)?;
+                                poke_on_cooldown += 1;
+                            }
+                        } else {
+                            println!("   ⚠️  Poke failed: {}", e);
+                        }
+                    }
+                    _ => println!("   ⚠️  Poke failed"),
                 }
-                Err(e) => {
-                    if let Some(cooldown) = extract_cooldown_seconds(&e.to_string()) {
-                        db.update_poke_with_cooldown(username, cooldown)?;
+
+                tokio::time::sleep(Duration::from_millis(800)).await;
+
+                if !record.friend_request_sent {
+                    match self.send_friend_request(username).await {
+                        Ok(response) if response.success => {
+                            println!("   🤝 Friend request sent!");
+                            db.mark_friend_request_sent(username)?;
+                            friend_success += 1;
+                        }
+                        _ => println!("   ⚠️  Friend request failed"),
                     }
                 }
             }
 
-            tokio::time::sleep(Duration::from_millis(500)).await;
-        }
-
-        let users_for_friend = db.get_users_for_friend_request()?;
-        for username in users_for_friend.iter().take(5) {
-            match self.send_friend_request(username).await {
-                Ok(response) => {
-                    if response.success {
-                        db.mark_friend_request_sent(username)?;
-                        friends += 1;
-                    }
-                }
-                Err(_) => {}
+            if i < users.len() - 1 {
+                let delay_secs = rng.gen_range(min_delay..=max_delay);
+                println!("   ⏳ Next in {:.1}s...\n", delay_secs);
+                tokio::time::sleep(Duration::from_secs_f64(delay_secs)).await;
             }
-
-            tokio::time::sleep(Duration::from_millis(500)).await;
         }
 
-        stats.increment_pokes(pokes);
-        stats.increment_friends(friends);
+        // ✅ Update stats
+        stats.increment_pokes(poke_success);
+        stats.increment_friends(friend_success);
 
-        Ok((pokes, friends))
+        println!("\n✨ ===== ENGAGEMENT SUMMARY =====");
+        println!("✅ Pokes successful: {}", poke_success);
+        println!("⏳ Pokes on cooldown: {}", poke_on_cooldown);
+        println!("🤝 Friend Requests: {}", friend_success);
+
+        // Show next pokeable user after completing all current pokes
+        if let Ok(Some(next)) = db.get_next_pokeable_user() {
+            let time_str = format_duration(next.time_until_pokeable);
+            println!("\n⏰ Next user ready: {} in {}", next.username, time_str);
+        }
+
+        Ok((poke_success, friend_success))
     }
 }
 
@@ -1346,11 +1414,11 @@ async fn run_all_workers(client: BeetleApiClient) -> Result<()> {
         status_dashboard_worker(stats_clone, client_clone).await
     });
 
-    // let stats_clone = stats.clone();
-    // let client_clone = client.clone();
-    // let beetle_handle = tokio::spawn(async move {
-    //     beetle_auto_claim_worker(client_clone, stats_clone).await
-    // });
+    let stats_clone = stats.clone();
+    let client_clone = client.clone();
+    let beetle_handle = tokio::spawn(async move {
+        beetle_auto_claim_worker(client_clone, stats_clone).await
+    });
 
     let stats_clone = stats.clone();
     let client_clone = client.clone();
@@ -1358,20 +1426,20 @@ async fn run_all_workers(client: BeetleApiClient) -> Result<()> {
         cheese_auto_claim_worker(client_clone, stats_clone).await
     });
 
-    // let stats_clone = stats.clone();
-    // let client_clone = client.clone();
-    // let poke_handle = tokio::spawn(async move {
-    //     daily_poke_worker(client_clone, stats_clone).await
-    // });
+    let stats_clone = stats.clone();
+    let client_clone = client.clone();
+    let poke_handle = tokio::spawn(async move {
+        daily_poke_worker(client_clone, stats_clone).await
+    });
 
     tokio::select! {
         _ = signal::ctrl_c() => {
             println!("\n🛑 Shutting down...");
         }
         _ = dashboard_handle => {}
-        // _ = beetle_handle => {}
+        _ = beetle_handle => {}
         _ = cheese_handle => {}
-        // _ = poke_handle => {}
+        _ = poke_handle => {}
     }
 
     Ok(())
@@ -1400,12 +1468,58 @@ async fn main() -> Result<()> {
         Ok(auth) => {
             auth.display_info();
             if !auth.is_authenticated() {
-                println!("⚠️  Warning: Not authenticated, but continuing anyway...\n");
+                println!("⚠️  Authentication failed - attempting automatic token renewal...\n");
+                
+                // Try to renew the token
+                match client.renew_token().await {
+                    Ok(()) => {
+                        println!("✅ Token renewed successfully!");
+                        
+                        // Verify the new token works
+                        match client.get_auth_status().await {
+                            Ok(renewed_auth) => {
+                                renewed_auth.display_info();
+                                if !renewed_auth.is_authenticated() {
+                                    anyhow::bail!("❌ Token renewal failed - still not authenticated");
+                                }
+                            }
+                            Err(e) => {
+                                anyhow::bail!("❌ Failed to verify renewed token: {}", e);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        anyhow::bail!("❌ Failed to renew token: {}\n\nPlease update your auth.txt and remilia_cookies.json files", e);
+                    }
+                }
             }
         }
         Err(e) => {
             println!("⚠️  Failed to fetch auth status: {}", e);
-            println!("Continuing with workers anyway...\n");
+            println!("⚠️  Attempting automatic token renewal...\n");
+            
+            // Try to renew the token even if the request failed
+            match client.renew_token().await {
+                Ok(()) => {
+                    println!("✅ Token renewed successfully!");
+                    
+                    // Verify the new token works
+                    match client.get_auth_status().await {
+                        Ok(renewed_auth) => {
+                            renewed_auth.display_info();
+                            if !renewed_auth.is_authenticated() {
+                                anyhow::bail!("❌ Token renewal failed - still not authenticated");
+                            }
+                        }
+                        Err(e) => {
+                            anyhow::bail!("❌ Failed to verify renewed token: {}", e);
+                        }
+                    }
+                }
+                Err(e) => {
+                    anyhow::bail!("❌ Failed to renew token: {}\n\nPlease update your auth.txt and remilia_cookies.json files manually", e);
+                }
+            }
         }
     }
 

@@ -2336,8 +2336,7 @@ impl BeetleApiClient {
             if i < users.len() - 1 {
                 let delay_secs = rng.gen_range(min_delay..=max_delay);
                 println!("   ⏳ Next in {:.1}s...\n", delay_secs);
-                tokio::time::sleep(Duration::from_secs_f64(d
-                    elay_secs)).await;
+                tokio::time::sleep(Duration::from_secs_f64(delay_secs)).await;
             }
         }
 

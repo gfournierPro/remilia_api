@@ -1,35 +1,32 @@
 use anyhow::{Context, Result};
-use chrono::Utc;
 use rand::rngs::OsRng;
 use rand::{Rng, distributions::Alphanumeric};
-use rand_distr::{Distribution, Normal};
 use reqwest::{Client, header};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::collections::HashSet;
 use std::fs;
-use std::fs::{File, OpenOptions};
-use std::io::{BufRead, BufReader, Write};
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
-use tokio::select;
 use tokio::signal;
-use tokio::time::Instant;
-use tokio::time::{Duration, interval, sleep}; // Add this import at the top
+use tokio::time::{Duration, interval};
 
 // ===== SOCKET.IO STRUCTS =====
 
 #[derive(Debug, Deserialize)]
 struct SocketInitResponse {
     sid: String,
+    #[allow(dead_code)]
     upgrades: Vec<String>,
     #[serde(rename = "pingInterval")]
+    #[allow(dead_code)]
     ping_interval: u32,
     #[serde(rename = "pingTimeout")]
+    #[allow(dead_code)]
     ping_timeout: u32,
     #[serde(rename = "maxPayload")]
+    #[allow(dead_code)]
     max_payload: u64,
 }
 
@@ -63,11 +60,17 @@ enum FeedActivity {
 struct Cookie {
     name: String,
     value: String,
+    #[allow(dead_code)]
     domain: String,
+    #[allow(dead_code)]
     path: String,
+    #[allow(dead_code)]
     secure: bool,
+    #[allow(dead_code)]
     http_only: Option<bool>,
+    #[allow(dead_code)]
     same_site: String,
+    #[allow(dead_code)]
     expiry: u64,
 }
 
@@ -116,23 +119,33 @@ struct AuthStatusResponse {
     #[serde(default)]
     user: Option<AuthUser>,
     #[serde(default)]
+    #[allow(dead_code)]
     token: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct AuthUser {
+    #[allow(dead_code)]
     sub: String,
     username: String,
+    #[allow(dead_code)]
     email: String,
     #[serde(rename = "tokenExpiration")]
+    #[allow(dead_code)]
     token_expiration: u64,
+    #[allow(dead_code)]
     pfp: Pfp,
+    #[allow(dead_code)]
     pfp_url: String,
     display_name: String,
+    #[allow(dead_code)]
     theme: String,
+    #[allow(dead_code)]
     cover: String,
+    #[allow(dead_code)]
     color: u32,
+    #[allow(dead_code)]
     onboarded: bool,
     pokes: u32,
     page_views: u32,
@@ -185,12 +198,16 @@ pub struct UserProfile {
 //     pfp_url: String,
 // }
 
+// Unused - kept for potential future use
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Achievement {
+    #[allow(dead_code)]
     id: u32,
     granted_at: String,
-    _id: String,
+    #[serde(rename = "_id")]
+    mongo_id: String,
     title: String,
     description: String,
     grant_message: String,
@@ -219,6 +236,8 @@ pub struct ExtraContext {
     pub other: serde_json::Value,
 }
 
+// Unused - kept for potential future use
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct AchievementContext {
@@ -227,12 +246,16 @@ struct AchievementContext {
     season: u32,
 }
 
+// Unused - kept for potential future use
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct TwitterMutuals {
     display: Vec<String>,
     count: u32,
 }
 
+// Unused - kept for potential future use
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct SocialCredit {
@@ -241,18 +264,22 @@ struct SocialCredit {
     components: SocialCreditComponents,
 }
 
+// Unused - kept for potential future use
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct SocialCreditComponents {
     base: u32,
     onboarding: u32,
     aggregate_bonus: u32,
-    aggregate_scores: AggregateScores, // ✅ Nested here!
+    aggregate_scores: AggregateScores,
     friend_bonus: u32,
     #[serde(rename = "final")]
     final_score: u32,
 }
 
+// Unused - kept for potential future use
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct AggregateScores {
     miladychan: u32,
@@ -279,6 +306,7 @@ struct CooldownsResponse {
 }
 
 impl CooldownsResponse {
+    #[allow(dead_code)]
     pub fn can_beetle_catch(&self) -> bool {
         self.cooldowns.catch_beetle == 0
     }
@@ -287,18 +315,21 @@ impl CooldownsResponse {
         self.cooldowns.claim_ubc == 0
     }
 
+    #[allow(dead_code)]
     pub fn has_hunts_remaining(&self) -> bool {
         self.hunt_info.hunts_used < 3
     }
 
+    #[allow(dead_code)]
     pub fn time_until_beetle_ready(&self) -> u64 {
-        self.cooldowns.catch_beetle / 1000 // Convert ms to seconds
+        self.cooldowns.catch_beetle / 1000
     }
 
     pub fn time_until_ubc_ready(&self) -> u64 {
-        self.cooldowns.claim_ubc / 1000 // Convert ms to seconds
+        self.cooldowns.claim_ubc / 1000
     }
 
+    #[allow(dead_code)]
     pub fn time_until_hunt_reset(&self) -> u64 {
         // If resetTime is 0, hunts are already available
         if self.hunt_info.reset_time == 0 {
@@ -387,24 +418,32 @@ enum CatchBeetleApiResponse {
 #[derive(Debug, Deserialize, Clone)]
 struct CatchBeetleResult {
     beetle: String,
-    beetle_name: String, // snake_case - leave as-is
+    beetle_name: String,
     xp: u32,
     #[serde(rename = "cooldownMs")]
-    cooldown_ms: u64, // camelCase in JSON
+    cooldown_ms: u64,
     #[serde(rename = "catchVideoInfo")]
-    catch_video_info: VideoInfo, // camelCase in JSON
+    #[allow(dead_code)]
+    catch_video_info: VideoInfo,
     #[serde(rename = "beetleCard")]
-    beetle_card: BeetleCard, // camelCase in JSON
+    #[allow(dead_code)]
+    beetle_card: BeetleCard,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 struct BeetleCard {
-    beetle_name: String, // snake_case in JSON
-    girl_name: String,   // snake_case in JSON
+    #[allow(dead_code)]
+    beetle_name: String,
+    #[allow(dead_code)]
+    girl_name: String,
     species: String,
-    species_latin: String, // snake_case in JSON
+    #[allow(dead_code)]
+    species_latin: String,
+    #[allow(dead_code)]
     icon: String,
+    #[allow(dead_code)]
     background: String,
+    #[allow(dead_code)]
     character: String,
 }
 
@@ -413,11 +452,13 @@ struct BeetleCard {
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 struct User {
+    #[allow(dead_code)]
     id: String,
     cheese: u32,
     xp: u32,
     level: u32,
     inventory: BeetleInventory,
+    #[allow(dead_code)]
     discovered: Vec<String>,
     streaks: Streaks,
     #[serde(rename = "beetleHuntsUsed")]
@@ -426,7 +467,7 @@ struct User {
     last_beetle_hunt_date: u64,
     #[serde(rename = "levelInfo")]
     level_info: LevelInfo,
-    cooldowns: Cooldowns, // ✅ Renamed to avoid conflict
+    cooldowns: Cooldowns,
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
@@ -590,6 +631,7 @@ impl SessionBeetleInventory {
 #[serde(rename_all = "camelCase")]
 struct Streaks {
     ubc: u32,
+    #[allow(dead_code)]
     last_claim: u64,
     lousy_beetle: u32,
     #[serde(default)]
@@ -599,7 +641,9 @@ struct Streaks {
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 struct LevelInfo {
+    #[allow(dead_code)]
     xp_in_current_level: i32,
+    #[allow(dead_code)]
     xp_for_next_level: u32,
     xp_needed_for_next: u32,
     progress_percent: f64,
@@ -638,11 +682,14 @@ pub struct FailedHuntResult {
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 struct BeetleHuntResult {
+    #[allow(dead_code)]
     success: bool,
+    #[allow(dead_code)]
     beetle: String,
     #[serde(rename = "beetle_name")]
     beetle_name: String,
     xp: u32,
+    #[allow(dead_code)]
     catch_video_info: VideoInfo,
     beetle_card: BeetleCard,
 }
@@ -650,9 +697,12 @@ struct BeetleHuntResult {
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 struct VideoInfo {
+    #[allow(dead_code)]
     src: String,
+    #[allow(dead_code)]
     poster: String,
     #[serde(rename = "loop")]
+    #[allow(dead_code)]
     loop_video: bool,
 }
 
@@ -686,7 +736,9 @@ struct FriendsResponse {
 
 #[derive(Debug, Deserialize)]
 struct FriendsListResponse {
+    #[allow(dead_code)]
     page: u32,
+    #[allow(dead_code)]
     limit: u32,
     friends: Vec<Friend>,
     total: u32,
@@ -696,11 +748,14 @@ struct FriendsListResponse {
 #[serde(rename_all = "camelCase")]
 struct Friend {
     display_username: String,
+    #[allow(dead_code)]
     display_name: String,
     #[serde(default)]
-    pfp: Option<Pfp>, // Make optional
+    #[allow(dead_code)]
+    pfp: Option<Pfp>,
     #[serde(default)]
-    pfp_url: Option<String>, // Make optional
+    #[allow(dead_code)]
+    pfp_url: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -763,6 +818,7 @@ impl FriendsDatabase {
     }
 
     // Add new username
+    #[allow(dead_code)]
     fn add_username(&self, username: &str) -> Result<bool> {
         let mut records = self.load_records()?;
 
@@ -786,6 +842,7 @@ impl FriendsDatabase {
     }
 
     // Add multiple usernames
+    #[allow(dead_code)]
     fn add_usernames(&self, usernames: &[String]) -> Result<usize> {
         let mut records = self.load_records()?;
         let mut added = 0;
@@ -918,6 +975,7 @@ impl FriendsDatabase {
         Ok(records.get(username).cloned())
     }
 
+    #[allow(dead_code)]
     fn remove_users_not_in_list(&self, usernames_to_keep: &[String]) -> Result<usize> {
         let mut records = self.load_records()?;
         let initial_count = records.len();
@@ -1417,8 +1475,11 @@ impl BeetleApiClient {
             .await
             .context("Failed to send cooldowns request")?;
 
+
         let status = response.status();
         println!("✅ Response status: {}", status);
+
+
 
         if !status.is_success() {
             let error_text = response.text().await.unwrap_or_default();
@@ -1426,7 +1487,7 @@ impl BeetleApiClient {
         }
 
         let text = response.text().await?;
-        // println!("📦 Raw cooldowns response: {}", text);
+        println!("📦 Raw cooldowns response: {}", text);
 
         let cooldowns: CooldownsResponse =
             serde_json::from_str(&text).context("Failed to parse cooldowns JSON")?;
@@ -1625,12 +1686,6 @@ impl BeetleApiClient {
                         anyhow::bail!(
                             "❌ Request failed with 500 and couldn't fetch profile: {}. Original error: {}",
                             profile_err,
-                            error_text
-                        );
-                    }
-                    _ => {
-                        anyhow::bail!(
-                            "❌ Request failed with 500 and unknown profile error: {}",
                             error_text
                         );
                     }
@@ -2315,37 +2370,10 @@ impl BeetleApiClient {
         None
     }
 
-    async fn get_cheese_count(&self) -> Result<u32> {
-        // println!("🧀 Fetching cheese count for ~mao");
-
-        let url = format!("https://www.remilia.com/api/profile/{}", "~mao");
-
-        let response = self
-            .client
-            .get(&url)
-            .headers(self.build_headers_remilia())
-            .send()
-            .await
-            .context("Failed to send cheese request")?;
-
-        if !response.status().is_success() {
-            anyhow::bail!("Request failed with status {}", response.status());
-        }
-
-        let json: serde_json::Value = response.json().await.context("Failed to parse response")?;
-
-        let cheese = json["user"]["stats"]["beetle_game"]["cheese"]
-            .as_u64()
-            .ok_or_else(|| anyhow::anyhow!("Cheese count not found"))?;
-
-        println!("🧀 You have {} cheese!", cheese);
-
-        Ok(cheese as u32)
-    }
 
     pub async fn update_theme_to_dark(&mut self) -> Result<UpdateThemeResponse> {
         // First, get current profile to preserve settings
-        let current_profile = self.get_auth_status().await?;
+        let _current_profile = self.get_auth_status().await?;
 
         let request = UpdateThemeRequest {
             theme: "dark".to_string(),
@@ -2733,7 +2761,7 @@ fn format_duration(seconds: u64) -> String {
 }
 
 fn format_timestamp(seconds_from_now: u64) -> String {
-    use chrono::{DateTime, Duration, Local};
+    use chrono::{Duration, Local};
 
     let now = Local::now();
     let target = now + Duration::seconds(seconds_from_now as i64);
@@ -2804,7 +2832,7 @@ fn display_catch_result(response: &CatchBeetleApiResponse) {
             display_beetle_user(user);
         }
         CatchBeetleApiResponse::Success {
-            success,
+            success: _,
             result,
             user,
         } => {
@@ -2828,15 +2856,6 @@ fn display_poke_result(response: &PokeResponse, username: &str) {
         println!("👉 They'll get a notification!");
     } else {
         println!("\n❌ Failed to poke ~{}", username);
-    }
-}
-
-fn display_friend_request_result(response: &FriendsResponse, username: &str) {
-    if response.success {
-        println!("\n✅ Successfully sent friend request to ~{}", username);
-        println!("👉 They'll get a notification!");
-    } else {
-        println!("\n❌ Failed to send friend request to ~{}", username);
     }
 }
 
@@ -2904,7 +2923,7 @@ fn display_claim_ubc_result(response: &ClaimUBCApiResponse) {
             display_beetle_user(user);
         }
         ClaimUBCApiResponse::Success {
-            success,
+            success: _,
             result,
             user,
         } => {
@@ -3150,10 +3169,11 @@ async fn main() -> Result<()> {
             display_auth_status(&auth_status);
         }
         7 => {
-            let cooldowns = client.get_cooldowns().await?;
+            let _cooldowns = client.get_cooldowns().await?;
 
             print!("Enter your username (without ~): ");
-            std::io::Write::flush(&mut std::io::stdout())?;
+            use std::io::Write;
+            std::io::stdout().flush()?;
 
             let mut username = String::new();
             std::io::stdin().read_line(&mut username)?;
@@ -3284,14 +3304,6 @@ async fn main() -> Result<()> {
         21 => {
             run_all_workers(client).await?;
         }
-        22 => match client.get_cheese_count().await {
-            Ok(count) => {
-                println!("🧀 Current cheese count: {}", count);
-            }
-            Err(e) => {
-                eprintln!("❌ Failed to get cheese count: {}", e);
-            }
-        },
         23 => {
             println!("🌙 Updating theme to dark mode...");
             match client.update_theme_to_dark().await {
@@ -3320,12 +3332,12 @@ async fn run_all_workers(client: BeetleApiClient) -> Result<()> {
     let stats = WorkerStats::new();
 
     // Spawn all workers with stats
-    // let beetle_worker = tokio::spawn(beetle_auto_claim_worker(Arc::clone(&client), stats.clone()));
-    // let cheese_worker = tokio::spawn(cheese_auto_claim_worker(Arc::clone(&client), stats.clone()));
-    // let poke_worker = tokio::spawn(daily_poke_worker(Arc::clone(&client), stats.clone()));
-    // let dashboard_worker =
-    //     tokio::spawn(status_dashboard_worker(stats.clone(), Arc::clone(&client)));
-    let scrape_worker = tokio::spawn(daily_scrape_worker(Arc::clone(&client)));
+    let beetle_worker = tokio::spawn(beetle_auto_claim_worker(Arc::clone(&client), stats.clone()));
+    let cheese_worker = tokio::spawn(cheese_auto_claim_worker(Arc::clone(&client), stats.clone()));
+    let poke_worker = tokio::spawn(daily_poke_worker(Arc::clone(&client), stats.clone()));
+    let dashboard_worker =
+        tokio::spawn(status_dashboard_worker(stats.clone(), Arc::clone(&client)));
+    // let scrape_worker = tokio::spawn(daily_scrape_worker(Arc::clone(&client)));
 
     println!("✅ All workers started!");
     println!("   🪲 Beetle auto-claim");
@@ -3341,11 +3353,11 @@ async fn run_all_workers(client: BeetleApiClient) -> Result<()> {
     println!("\n🛑 Shutting down workers...");
 
     // Abort all tasks
-    // beetle_worker.abort();
-    // cheese_worker.abort();
-    // poke_worker.abort();
-    // dashboard_worker.abort();
-    scrape_worker.abort();
+    beetle_worker.abort();
+    cheese_worker.abort();
+    poke_worker.abort();
+    dashboard_worker.abort();
+    // scrape_worker.abort();
 
     println!("✅ All workers stopped");
 
@@ -3624,22 +3636,19 @@ async fn beetle_auto_claim_worker(client: Arc<BeetleApiClient>, stats: WorkerSta
 
                 // === CALCULATE NEXT CHECK TIME ===
                 let next_check = if user.can_catch_beetle() {
-                    10
+                    0
                 } else {
-                    match client.get_cheese_count().await {
-                        Ok(cheese_count) if cheese_count < 20 => {
+                    if user.cheese < 20 {
                             let wait_time = user.time_until_catch_ready();
                             println!(
                                 "🧀 [BEETLE] Low cheese ({}/20) - waiting for next catch opportunity",
-                                cheese_count
+                                user.cheese
                             );
                             wait_time
-                        }
-                        _ => {
+                        } else {
                             let catch_cooldown = user.time_until_catch_ready();
                             let hunt_reset = user.time_until_hunt_reset();
                             catch_cooldown.min(hunt_reset)
-                        }
                     }
                 };
                 println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");

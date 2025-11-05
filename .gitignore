@@ -19,3 +19,7 @@ processed_profiles.json
 auth.txt
 remilia_cookies.json
 friends_db.json
+
+# Generated leaderboards
+leaderboard*.html
+test_leaderboard.html

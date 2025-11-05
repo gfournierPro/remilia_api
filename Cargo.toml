@@ -16,6 +16,7 @@ rand_distr = "0.4"
 urlencoding = "2.1"
 thirtyfour = "0.34" # WebDriver for automatic re-authentication
 dotenv = "0.15" # Load .env file for configuration
+futures = "0.3" # For concurrent batch processing
 
 [[bin]]
 name = "beetle_hunt"
@@ -24,3 +25,7 @@ path = "src/main.rs"
 [[bin]]
 name = "beetle_hunt_refactored"
 path = "src/main_refactored.rs"
+
+[[bin]]
+name = "leaderboard"
+path = "src/leaderboard_main.rs"

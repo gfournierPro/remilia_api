@@ -1,5 +1,44 @@
 use serde::{Deserialize, Serialize};
 
+// Helper module for deserializing string or integer as u32
+mod string_or_int {
+    use serde::{self, Deserialize, Deserializer};
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<u32>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum StringOrInt {
+            String(String),
+            Int(i32), // Changed to i32 to handle negative numbers
+            Array(Vec<serde_json::Value>), // Handle empty arrays
+        }
+
+        match StringOrInt::deserialize(deserializer) {
+            Ok(StringOrInt::String(s)) => {
+                s.parse::<u32>()
+                    .map(Some)
+                    .map_err(serde::de::Error::custom)
+            }
+            Ok(StringOrInt::Int(i)) => {
+                if i >= 0 {
+                    Ok(Some(i as u32))
+                } else {
+                    // Treat negative numbers as None or default to 0
+                    Ok(Some(0))
+                }
+            }
+            Ok(StringOrInt::Array(_)) => {
+                // Empty arrays or any array treated as None/default
+                Ok(Some(0))
+            }
+            Err(_) => Ok(None), // If deserialization fails, return None
+        }
+    }
+}
+
 /// Profile pfp information
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Pfp {
@@ -23,10 +62,17 @@ pub struct ProfileResponse {
     pub is_authenticated: bool,
     #[serde(rename = "isOwnProfile")]
     pub is_own_profile: bool,
-    #[serde(rename = "currentUsername")]
+    #[serde(rename = "currentUsername", default)]
     pub current_username: Option<String>,
-    #[serde(rename = "extraContext")]
+    #[serde(rename = "extraContext", default)]
     pub extra_context: Option<ExtraContext>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SocialCredit {
+    pub score: i64,
+    pub last_calculated: Option<String>,
 }
 
 /// User profile information
@@ -45,8 +91,11 @@ pub struct UserProfile {
     pub beetles: u32,
     pub theme: String,
     pub cover: String,
-    pub color: u32,
+    #[serde(default, deserialize_with = "string_or_int::deserialize")]
+    pub color: Option<u32>,
     pub location: Option<String>,
+    #[serde(rename = "socialCredit")]
+    pub social_credit: SocialCredit,
     #[serde(flatten)]
     pub other: serde_json::Value,
 }
@@ -121,39 +170,6 @@ pub struct AchievementContext {
 pub struct TwitterMutuals {
     pub display: Vec<String>,
     pub count: u32,
-}
-
-/// Social credit information
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SocialCredit {
-    pub score: u32,
-    pub last_calculated: String,
-    pub components: SocialCreditComponents,
-}
-
-/// Social credit components
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SocialCreditComponents {
-    pub base: u32,
-    pub onboarding: u32,
-    pub aggregate_bonus: u32,
-    pub aggregate_scores: AggregateScores,
-    pub friend_bonus: u32,
-    #[serde(rename = "final")]
-    pub final_score: u32,
-}
-
-/// Aggregate scores
-#[derive(Debug, Deserialize)]
-pub struct AggregateScores {
-    pub miladychan: u32,
-    pub twitter: u32,
-    pub profiles: u32,
-    pub beetle_game: u32,
-    pub miladycraft: u32,
-    pub ethereum: u32,
 }
 
 /// Request to update theme

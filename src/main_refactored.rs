@@ -667,6 +667,126 @@ impl BeetleApiClient {
         Ok(text)
     }
 
+    async fn get_friends_page(
+        &self,
+        username: &str,
+        page: u32,
+        limit: u32,
+    ) -> Result<FriendsListResponse> {
+        let url = format!(
+            "https://www.remilia.com/identity/friends?username={}&page={}&limit={}",
+            username, page, limit
+        );
+
+        let response = self
+            .client
+            .get(&url)
+            .headers(self.build_headers_remilia().await)
+            .header("Referer", format!("https://www.remilia.com/~{}", username))
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            anyhow::bail!("Failed to get friends: {}", response.status());
+        }
+
+        let data: FriendsListResponse = response.json().await?;
+        Ok(data)
+    }
+
+    async fn scrape_all_friends(&self, db_file: &str) -> Result<()> {
+        let username = "remilia_jackson";
+        let my_username = "mao";
+        println!("🔍 Scraping friends of ~{}...\n", username);
+
+        let db = FriendsDatabase::new(db_file);
+        let initial_count = db.count()?;
+        println!("📊 Database currently has {} usernames\n", initial_count);
+
+        // Get first page to determine total
+        let first_page = self.get_friends_page(username, 1, 1000).await?;
+        let total_friends = first_page.total;
+        let total_pages = (total_friends as f32 / 1000.0).ceil() as u32;
+
+        println!("👥 Target user has {} friends", total_friends);
+        println!("📄 Will scrape {} pages\n", total_pages);
+
+        let mut all_usernames = Vec::new();
+        let mut errors = 0;
+        let mut filtered_self = 0;
+
+        // Scrape all pages
+        for page in 1..=total_pages {
+            print!("📄 Page {}/{} ... ", page, total_pages);
+            std::io::Write::flush(&mut std::io::stdout())?;
+
+            match self.get_friends_page(username, page, 1000).await {
+                Ok(response) => {
+                    let usernames: Vec<String> = response
+                        .friends
+                        .iter()
+                        .filter_map(|f| {
+                            let username = f.display_username.clone();
+                            // Filter out your own username (with or without ~)
+                            if username == my_username
+                                || username == format!("~{}", my_username)
+                                || username.trim_start_matches('~') == my_username
+                            {
+                                filtered_self += 1;
+                                None
+                            } else {
+                                Some(username)
+                            }
+                        })
+                        .collect();
+
+                    println!("✅ Got {} friends", usernames.len());
+                    all_usernames.extend(usernames);
+
+                    // Rate limiting
+                    tokio::time::sleep(Duration::from_millis(500)).await;
+                }
+                Err(e) => {
+                    println!("❌ Error: {}", e);
+                    errors += 1;
+
+                    // If we get a parsing error, log the raw response for debugging
+                    if errors < 3 {
+                        println!("   ⚠️  Continuing with next page...");
+                        tokio::time::sleep(Duration::from_secs(1)).await;
+                        continue;
+                    } else {
+                        println!("   ❌ Too many errors, stopping scrape");
+                        break;
+                    }
+                }
+            }
+        }
+
+        println!("\n💾 Syncing database...");
+
+        // Sync database: add new friends and remove unfriended users
+        let sync_stats = db.sync_with_friends(&all_usernames)?;
+
+        println!("\n✨ ===== SCRAPING COMPLETE =====");
+        println!("📥 Total friends scraped: {}", all_usernames.len());
+        if filtered_self > 0 {
+            println!("🚫 Filtered out self: {} instance(s)", filtered_self);
+        }
+        println!("➕ New users added: {}", sync_stats.added);
+        println!("➖ Unfriended users removed: {}", sync_stats.removed);
+        println!(
+            "📊 Database size: {} → {}",
+            sync_stats.initial_count, sync_stats.final_count
+        );
+        println!("💾 Saved to: {}", db_file);
+        if errors > 0 {
+            println!("⚠️  Encountered {} page errors", errors);
+        }
+
+        Ok(())
+    }
+
     async fn auto_engage_from_db_with_stats(
         &self,
         db_file: &str,
@@ -1246,6 +1366,29 @@ async fn daily_poke_worker(client: Arc<BeetleApiClient>, stats: WorkerStats) -> 
     }
 }
 
+async fn daily_scrape_worker(client: Arc<BeetleApiClient>) -> Result<()> {
+    println!("📥 [SCRAPE WORKER] Starting...\n");
+
+    let mut interval = interval(Duration::from_secs(24 * 60 * 60));
+
+    loop {
+        interval.tick().await;
+
+        println!("📥 [SCRAPE] Pulling new friends from remilia_jackson...");
+
+        match client.scrape_all_friends("friends_db.json").await {
+            Ok(_) => {
+                println!("📥 [SCRAPE] ✅ Database updated!");
+            }
+            Err(e) => {
+                println!("📥 [SCRAPE] ❌ Error: {}", e);
+            }
+        }
+
+        println!("📥 [SCRAPE] ⏰ Next scrape in 24 hours\n");
+    }
+}
+
 async fn status_dashboard_worker(stats: WorkerStats, client: Arc<BeetleApiClient>) -> Result<()> {
     println!("📊 [DASHBOARD] Starting status worker...\n");
 
@@ -1432,6 +1575,11 @@ async fn run_all_workers(client: BeetleApiClient) -> Result<()> {
         daily_poke_worker(client_clone, stats_clone).await
     });
 
+    let client_clone = client.clone();
+    let scrape_handle = tokio::spawn(async move {
+        daily_scrape_worker(client_clone).await
+    });
+
     tokio::select! {
         _ = signal::ctrl_c() => {
             println!("\n🛑 Shutting down...");
@@ -1440,6 +1588,7 @@ async fn run_all_workers(client: BeetleApiClient) -> Result<()> {
         _ = beetle_handle => {}
         _ = cheese_handle => {}
         _ = poke_handle => {}
+        _ = scrape_handle => {}
     }
 
     Ok(())

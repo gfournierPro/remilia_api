@@ -316,16 +316,23 @@ impl User {
     }
 
     pub fn time_until_hunt_reset(&self) -> u64 {
+        if self.is_new_hunt_day() {
+            return 0; // Already reset
+        }
+
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
-            .as_secs();
+            .as_millis() as u64;
 
-        let seconds_since_epoch = now;
-        let seconds_today = seconds_since_epoch % (24 * 60 * 60);
-        let seconds_until_midnight = (24 * 60 * 60) - seconds_today;
+        // Reset time is 1.5 hours (5,400,000 ms) after last hunt
+        let reset_time = self.last_beetle_hunt_date + 5_400_000;
 
-        seconds_until_midnight
+        if reset_time > now {
+            (reset_time - now) / 1000 // Convert ms to seconds
+        } else {
+            0
+        }
     }
 
     pub fn display_status(&self) {

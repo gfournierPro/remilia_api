@@ -595,10 +595,11 @@ impl BeetleApiClient {
         println!("🔄 Attempting automatic token renewal...");
         
         let result = match auto_reauth().await {
-            Ok((new_token, new_profile_sid)) => {
-                // Update the token and profile_sid
+            Ok((new_token, new_profile_sid, new_beetle_sid)) => {
+                // Update the token, profile_sid, and beetle_sid
                 *self.auth_token.lock().await = new_token;
                 *self.profile_sid.lock().await = new_profile_sid;
+                *self.beetle_sid.lock().await = new_beetle_sid;
                 println!("✅ Token and cookies renewed successfully!");
                 
                 // Reset expiration to trigger a fresh check

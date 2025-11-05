@@ -390,7 +390,6 @@ impl BeetleApiClient {
             })
             .await?;
 
-        println!("📦 Raw cooldowns response: {}", &text[..text.len().min(200)]);
 
         let cooldowns = serde_json::from_str(&text)
             .context("Failed to parse cooldowns JSON")?;
@@ -456,12 +455,6 @@ impl BeetleApiClient {
 
         let headers = self.build_headers_remilia().await;
         
-        // Debug: Print the cookies being sent
-        if let Some(cookie_header) = headers.get(header::COOKIE) {
-            if let Ok(cookie_str) = cookie_header.to_str() {
-                println!("🍪 Sending cookies: {}", cookie_str);
-            }
-        }
 
         let response = self
             .client
@@ -474,31 +467,6 @@ impl BeetleApiClient {
         let status = response.status();
         println!("✅ Response status: {}", status);
 
-        // Extract and update cookies if provided
-        if let Some(cookie_header) = response.headers().get(header::SET_COOKIE) {
-            if let Ok(cookie_str) = cookie_header.to_str() {
-                println!("🍪 Server sent new cookie: {}", cookie_str);
-
-                // Parse and update the appropriate cookie
-                if cookie_str.contains("profile.sid=") {
-                    // Extract just the cookie value (before the semicolon)
-                    if let Some(value) = cookie_str.split(';').next() {
-                        if let Some(cookie_value) = value.strip_prefix("profile.sid=") {
-                            *self.profile_sid.lock().await = cookie_value.to_string();
-                            println!("✅ Updated profile.sid");
-                        }
-                    }
-                }
-                if cookie_str.contains("beetle.sid=") {
-                    if let Some(value) = cookie_str.split(';').next() {
-                        if let Some(cookie_value) = value.strip_prefix("beetle.sid=") {
-                            *self.beetle_sid.lock().await = cookie_value.to_string();
-                            println!("✅ Updated beetle.sid");
-                        }
-                    }
-                }
-            }
-        }
 
         // Handle 304 Not Modified (means we're still authenticated)
         if status == StatusCode::NOT_MODIFIED {
@@ -516,7 +484,6 @@ impl BeetleApiClient {
         }
 
         let text = response.text().await?;
-        println!("📦 Raw response: {}", text);
 
         let auth_status: AuthStatusResponse =
             serde_json::from_str(&text).context("Failed to parse auth status JSON")?;

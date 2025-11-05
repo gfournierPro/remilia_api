@@ -4,6 +4,7 @@
 //! by using headless Chrome to perform SSO login and extract a new token.
 
 use anyhow::{Context, Result};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fs;
 use std::time::Duration;
@@ -16,6 +17,19 @@ pub struct ReauthConfig {
     pub password: String,
     pub chrome_binary_path: String,
     pub chromedriver_url: String,
+}
+
+/// Cookie structure matching remilia_cookies.json format
+#[derive(Debug, Serialize, Deserialize)]
+struct RemiliaCookie {
+    name: String,
+    value: String,
+    domain: String,
+    path: String,
+    secure: bool,
+    http_only: bool,
+    same_site: String,
+    expiry: u64,
 }
 
 impl ReauthConfig {
@@ -90,7 +104,7 @@ async fn wait_for_element_multiple(
 }
 
 /// Perform SSO login and extract new auth token
-async fn perform_sso_login(driver: &WebDriver, config: &ReauthConfig) -> Result<(String, String)> {
+async fn perform_sso_login(driver: &WebDriver, config: &ReauthConfig) -> Result<(String, String, String)> {
     println!("🔐 Clearing cookies and navigating to Remilia to trigger SSO login...");
     
     // Clear all cookies to force SSO login
@@ -190,16 +204,19 @@ async fn perform_sso_login(driver: &WebDriver, config: &ReauthConfig) -> Result<
     
     // Look for session cookies
     let mut profile_sid = None;
+    let mut beetle_sid = None;
     
     for cookie in &cookies {
         println!("   🍪 Cookie: {} = {}", cookie.name, &cookie.value[..cookie.value.len().min(20)]);
         match cookie.name.as_str() {
-            "profile.sid" => profile_sid = Some(cookie.value.clone()),
+            "profile.sid" => profile_sid = Some(cookie.clone()),
+            "beetle.sid" => beetle_sid = Some(cookie.clone()),
             _ => {}
         }
     }
 
-    let profile_sid = profile_sid.context("Failed to extract profile.sid cookie from browser")?;
+    let profile_sid_cookie = profile_sid.context("Failed to extract profile.sid cookie from browser")?;
+    let beetle_sid_cookie = beetle_sid.context("Failed to extract beetle.sid cookie from browser")?;
 
     // Now use reqwest to make an authenticated request to get the token
     println!("🌐 Making authenticated request to /auth/status...");
@@ -211,7 +228,7 @@ async fn perform_sso_login(driver: &WebDriver, config: &ReauthConfig) -> Result<
     let mut headers = reqwest::header::HeaderMap::new();
     
     // Build cookie string with profile.sid
-    let cookie_str = format!("profile.sid={}", profile_sid);
+    let cookie_str = format!("profile.sid={}", profile_sid_cookie.value);
     println!("🍪 Using cookies: {} chars", cookie_str.len());
     headers.insert(
         reqwest::header::COOKIE,
@@ -254,12 +271,50 @@ async fn perform_sso_login(driver: &WebDriver, config: &ReauthConfig) -> Result<
 
     println!("🔑 Successfully extracted new token: {}...", &token[..token.len().min(20)]);
 
-    Ok((token, profile_sid))
+    // Save cookies to remilia_cookies.json
+    println!("💾 Saving cookies to remilia_cookies.json...");
+    
+    let cookies_to_save = vec![
+        RemiliaCookie {
+            name: "profile.sid".to_string(),
+            value: profile_sid_cookie.value.clone(),
+            domain: profile_sid_cookie.domain.clone().unwrap_or_else(|| ".remilia.com".to_string()),
+            path: profile_sid_cookie.path.clone().unwrap_or_else(|| "/".to_string()),
+            secure: profile_sid_cookie.secure.unwrap_or(true),
+            http_only: true, // Session cookies are typically http_only
+            same_site: profile_sid_cookie.same_site
+                .map(|s| format!("{:?}", s))
+                .unwrap_or_else(|| "Lax".to_string()),
+            expiry: profile_sid_cookie.expiry.unwrap_or(0) as u64,
+        },
+        RemiliaCookie {
+            name: "beetle.sid".to_string(),
+            value: beetle_sid_cookie.value.clone(),
+            domain: beetle_sid_cookie.domain.clone().unwrap_or_else(|| ".remilia.com".to_string()),
+            path: beetle_sid_cookie.path.clone().unwrap_or_else(|| "/".to_string()),
+            secure: beetle_sid_cookie.secure.unwrap_or(true),
+            http_only: true, // Session cookies are typically http_only
+            same_site: beetle_sid_cookie.same_site
+                .map(|s| format!("{:?}", s))
+                .unwrap_or_else(|| "Lax".to_string()),
+            expiry: beetle_sid_cookie.expiry.unwrap_or(0) as u64,
+        },
+    ];
+    
+    let cookies_json = serde_json::to_string_pretty(&cookies_to_save)
+        .context("Failed to serialize cookies to JSON")?;
+    
+    fs::write("remilia_cookies.json", cookies_json)
+        .context("Failed to write cookies to remilia_cookies.json")?;
+    
+    println!("✅ Cookies saved successfully!");
+
+    Ok((token, profile_sid_cookie.value, beetle_sid_cookie.value))
 }
 
-/// Automatically re-authenticate and save new token
+/// Automatically re-authenticate and save new token and cookies
 /// Returns (formatted_token, profile_sid)
-pub async fn auto_reauth() -> Result<(String, String)> {
+pub async fn auto_reauth() -> Result<(String, String, String)> {
     println!("\n🔄 ===== AUTOMATIC RE-AUTHENTICATION STARTED =====");
     println!("🔐 Token expired, attempting to get a new one...\n");
 
@@ -277,13 +332,13 @@ pub async fn auto_reauth() -> Result<(String, String)> {
     let driver = WebDriver::new(&config.chromedriver_url, caps).await
         .context("Failed to start WebDriver - is ChromeDriver running?")?;
 
-    // Perform login and get token + cookie
+    // Perform login and get token + cookie (this also saves cookies to remilia_cookies.json)
     let result = perform_sso_login(&driver, &config).await;
 
     // Clean up
     let _ = driver.quit().await;
 
-    let (new_token, profile_sid) = result?;
+    let (new_token, profile_sid, beetle_sid) = result?;
 
     // Format token with Bearer prefix (same format as auth.txt expects)
     let formatted_token = format!("Bearer {}", new_token);
@@ -296,7 +351,7 @@ pub async fn auto_reauth() -> Result<(String, String)> {
     println!("✅ New token saved successfully!");
     println!("🔄 ===== RE-AUTHENTICATION COMPLETED =====\n");
 
-    Ok((formatted_token, profile_sid))
+    Ok((formatted_token, profile_sid, beetle_sid))
 }
 
 /// Check if chromedriver is running, if not provide helpful error

@@ -2,26 +2,26 @@ use serde::{Deserialize, Serialize};
 use crate::utils::format_duration;
 
 /// Beetle inventory
-#[derive(Debug, Deserialize, Clone, Default)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default, PartialEq)]
 pub struct BeetleInventory {
     #[serde(default)]
-    pub green: u32,
+    pub green: i64,
     #[serde(default)]
-    pub ladybug: u32,
+    pub ladybug: i64,
     #[serde(default)]
-    pub monarch: u32,
+    pub monarch: i64,
     #[serde(default)]
-    pub pond: u32,
+    pub pond: i64,
     #[serde(default)]
-    pub bombardier: u32,
+    pub bombardier: i64,
     #[serde(default)]
-    pub purple: u32,
+    pub purple: i64,
     #[serde(default)]
-    pub skull: u32,
+    pub skull: i64,
 }
 
 impl BeetleInventory {
-    pub fn total_beetles(&self) -> u32 {
+    pub fn total_beetles(&self) -> i64 {
         self.green
             + self.ladybug
             + self.monarch
@@ -31,7 +31,7 @@ impl BeetleInventory {
             + self.skull
     }
 
-    pub fn get_sorted_beetles(&self) -> Vec<(&str, &str, u32, &str)> {
+    pub fn get_sorted_beetles(&self) -> Vec<(&str, &str, i64, &str)> {
         vec![
             ("🟢", "Green", self.green, "common"),
             ("🔴", "Ladybug", self.ladybug, "common"),
@@ -69,7 +69,7 @@ impl SessionBeetleInventory {
         current as i32 - start as i32
     }
 
-    fn get_count(&self, inv: &BeetleInventory, beetle_type: &str) -> u32 {
+    fn get_count(&self, inv: &BeetleInventory, beetle_type: &str) -> i64 {
         match beetle_type {
             "green" => inv.green,
             "ladybug" => inv.ladybug,
@@ -82,7 +82,7 @@ impl SessionBeetleInventory {
         }
     }
 
-    pub fn total_beetles(&self) -> u32 {
+    pub fn total_beetles(&self) -> i64 {
         self.current.green
             + self.current.ladybug
             + self.current.monarch
@@ -105,7 +105,7 @@ impl SessionBeetleInventory {
         current_total as i32 - start_total as i32
     }
 
-    pub fn get_sorted_beetles(&self) -> Vec<(&str, &str, u32, i32, &str)> {
+    pub fn get_sorted_beetles(&self) -> Vec<(&str, &str, i64, i32, &str)> {
         vec![
             (
                 "🟢",
@@ -164,9 +164,9 @@ impl SessionBeetleInventory {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Cooldowns {
     #[serde(rename = "catchBeetle", default)]
-    pub catch_beetle: u64,
+    pub catch_beetle: i64,
     #[serde(rename = "claimUBC", default)]
-    pub claim_ubc: u64,
+    pub claim_ubc: i64,
 }
 
 /// Hunt information
@@ -199,11 +199,11 @@ impl CooldownsResponse {
     }
 
     pub fn time_until_beetle_ready(&self) -> u64 {
-        self.cooldowns.catch_beetle / 1000
+        (self.cooldowns.catch_beetle / 1000) as u64
     }
 
     pub fn time_until_ubc_ready(&self) -> u64 {
-        self.cooldowns.claim_ubc / 1000
+        (self.cooldowns.claim_ubc / 1000) as u64
     }
 
     pub fn time_until_hunt_reset(&self) -> u64 {
@@ -226,48 +226,81 @@ impl CooldownsResponse {
 }
 
 /// Streaks information
-#[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Deserialize, Clone, Default, PartialEq, Serialize)]
 pub struct Streaks {
-    pub ubc: u32,
-    pub last_claim: u64,
-    pub lousy_beetle: u32,
-    #[serde(default)]
-    pub pity_counter: u32,
+    pub ubc: i64,
+    #[serde(rename = "lastClaim")]
+    pub last_claim: i64,
 }
 
 /// Level information
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Default, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LevelInfo {
-    pub xp_in_current_level: i32,
-    pub xp_for_next_level: u32,
-    pub xp_needed_for_next: u32,
-    pub progress_percent: f64,
+    pub xp_in_current_level: f64,
+    pub xp_for_next_level: i64,
+    pub xp_needed_for_next: i64,
+    pub progress_percent: i64,
 }
 
 /// Beetle user information
-#[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Deserialize, Clone, Default, PartialEq, Serialize)]
 pub struct User {
-    pub id: String,
-    pub cheese: u32,
-    pub xp: u32,
-    pub level: u32,
-    pub inventory: BeetleInventory,
-    pub discovered: Vec<String>,
-    pub streaks: Streaks,
-    #[serde(rename = "beetleHuntsUsed")]
-    pub beetle_hunts_used: u32,
+    pub id: i64,
+    #[serde(rename = "keycloak_id")]
+    pub keycloak_id: String,
+    pub xp: i64,
+    pub level: i64,
+    pub cheese: i64,
+    #[serde(rename = "BeetleGreen")]
+    pub beetle_green: i64,
+    #[serde(rename = "BeetleLadybug")]
+    pub beetle_ladybug: i64,
+    #[serde(rename = "BeetlePond")]
+    pub beetle_pond: i64,
+    #[serde(rename = "BeetleStag")]
+    pub beetle_stag: i64,
+    #[serde(rename = "BeetleGolden")]
+    pub beetle_golden: i64,
+    #[serde(rename = "BeetlePurple")]
+    pub beetle_purple: i64,
+    #[serde(rename = "BeetleBombardier")]
+    pub beetle_bombardier: i64,
+    #[serde(rename = "BeetleMonarch")]
+    pub beetle_monarch: i64,
+    #[serde(rename = "BeetleGoliath")]
+    pub beetle_goliath: i64,
+    #[serde(rename = "BeetleSkull")]
+    pub beetle_skull: i64,
+    #[serde(rename = "BeetleBlackWidow")]
+    pub beetle_black_widow: i64,
+    #[serde(rename = "UBCStreak")]
+    pub ubc_streak: i64,
+    #[serde(rename = "LastCheeseClaimAt")]
+    pub last_cheese_claim_at: i64,
+    #[serde(rename = "LastBeetleClaimAt")]
+    pub last_beetle_claim_at: i64,
     #[serde(rename = "lastBeetleHuntDate")]
-    pub last_beetle_hunt_date: u64,
+    pub last_beetle_hunt_date: i64,
+    #[serde(rename = "beetleHuntsUsed")]
+    pub beetle_hunts_used: i64,
+    #[serde(rename = "LousyBeetleCount")]
+    pub lousy_beetle_count: i64,
+    #[serde(rename = "CreatedAt")]
+    pub created_at: i64,
+    #[serde(rename = "UpdatedAt")]
+    pub updated_at: i64,
     #[serde(rename = "levelInfo")]
     pub level_info: LevelInfo,
+    #[serde(default)]
+    pub discovered: serde_json::Value,
+    pub inventory: BeetleInventory,
     pub cooldowns: Cooldowns,
+    pub streaks: Streaks,
 }
 
 impl User {
-    pub fn total_beetles(&self) -> u32 {
+    pub fn total_beetles(&self) -> i64 {
         self.inventory.total_beetles()
     }
 
@@ -283,7 +316,7 @@ impl User {
         if self.can_catch_beetle() {
             0
         } else {
-            self.cooldowns.catch_beetle / 1000
+            (self.cooldowns.catch_beetle / 1000) as u64
         }
     }
 
@@ -291,7 +324,7 @@ impl User {
         if self.can_claim_ubc() {
             0
         } else {
-            self.cooldowns.claim_ubc / 1000
+            (self.cooldowns.claim_ubc / 1000) as u64
         }
     }
 
@@ -299,8 +332,8 @@ impl User {
         self.beetle_hunts_used < 3
     }
 
-    pub fn hunts_remaining(&self) -> u32 {
-        3_u32.saturating_sub(self.beetle_hunts_used)
+    pub fn hunts_remaining(&self) -> i64 {
+        3_i64.saturating_sub(self.beetle_hunts_used)
     }
 
     pub fn is_new_hunt_day(&self) -> bool {
@@ -309,7 +342,7 @@ impl User {
             .unwrap()
             .as_secs();
 
-        let last_hunt_day = self.last_beetle_hunt_date / (24 * 60 * 60);
+        let last_hunt_day = (self.last_beetle_hunt_date / (24 * 60 * 60)) as u64;
         let today = now / (24 * 60 * 60);
 
         today > last_hunt_day
@@ -326,7 +359,7 @@ impl User {
             .as_millis() as u64;
 
         // Reset time is 1.5 hours (5,400,000 ms) after last hunt
-        let reset_time = self.last_beetle_hunt_date + 5_400_000;
+        let reset_time = self.last_beetle_hunt_date as u64 + 5_400_000;
 
         if reset_time > now {
             (reset_time - now) / 1000 // Convert ms to seconds

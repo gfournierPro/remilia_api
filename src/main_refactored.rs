@@ -340,7 +340,7 @@ impl BeetleApiClient {
                     .headers(headers.clone())
             })
             .await?;
-
+        // println!("🔍 Raw user response: {}", &text);
         let user = serde_json::from_str(&text)
             .context("Failed to parse user JSON")?;
         Ok(user)
@@ -356,7 +356,7 @@ impl BeetleApiClient {
                     .json(&CatchBeetleRequest {})
             })
             .await?;
-
+        println!("📦 beetle_catch - Raw response: {}", &text);
         let catch_response = serde_json::from_str(&text)
             .context("Failed to parse catch beetle JSON")?;
         Ok(catch_response)
@@ -406,28 +406,118 @@ impl BeetleApiClient {
                     .json(&BeetleHuntRequest {})
             })
             .await?;
-
+        println!("📦 beetle_hunt - Raw response: {}", &text);
         let hunt_response = serde_json::from_str(&text)
             .context("Failed to parse beetle hunt JSON")?;
         Ok(hunt_response)
     }
 
+    async fn get_profile(&self, username: &str) -> Result<ProfileResponse> {
+        let url = format!("https://www.remilia.com/api/profile/~{}", username);
+        let headers = self.build_headers_remilia().await;
+        
+        self.remilia_api_request_json(|| {
+            self.client
+                .get(&url)
+                .headers(headers.clone())
+        })
+        .await
+    }
+
     async fn poke_user(&self, username: &str) -> Result<PokeResponse> {
-        let url = "https://www.remilia.com/api/poke";
-        let body = PokeRequest {
+        println!("👉 Poking user: {}", username);
+
+        let poke_body = PokeRequest {
             poke_username: username.to_string(),
         };
-
         let headers = self.build_headers_remilia().await;
+
         let response = self
             .client
-            .post(url)
-            .headers(headers)
-            .json(&body)
+            .post("https://www.remilia.com/api/poke")
+            .headers(headers.clone())
+            .json(&poke_body)
             .send()
-            .await?;
+            .await
+            .context("Failed to send poke request")?;
 
-        let poke_response = response.json::<PokeResponse>().await?;
+        let status = response.status();
+        println!("✅ Response status: {}", status);
+
+        if !status.is_success() {
+            let error_text = response.text().await.unwrap_or_default();
+
+            // If we get a 500 error, check the profile to see if we can poke
+            if status == StatusCode::INTERNAL_SERVER_ERROR {
+                println!("⚠️  Got 500 error, checking profile for poke availability...");
+
+                match self.get_profile(username).await {
+                    Ok(profile) => {
+                        if let Some(extra_context) = profile.extra_context {
+                            if !extra_context.can_poke {
+                                let cooldown = extra_context.poke_cooldown_seconds;
+                                let minutes = cooldown / 60;
+                                let hours = minutes / 60;
+                                let remaining_minutes = minutes % 60;
+
+                                anyhow::bail!(
+                                    "❌ Cannot poke {}: Still on cooldown for {} hours and {} minutes ({} seconds)",
+                                    username,
+                                    hours,
+                                    remaining_minutes,
+                                    cooldown
+                                );
+                            } else {
+                                anyhow::bail!(
+                                    "❌ Profile says canPoke is true, but request failed with 500: {}",
+                                    error_text
+                                );
+                            }
+                        } else {
+                            anyhow::bail!(
+                                "❌ Request failed with 500 and no extra context in profile: {}",
+                                error_text
+                            );
+                        }
+                    }
+                    Err(profile_err) => {
+                        anyhow::bail!(
+                            "❌ Request failed with 500 and couldn't fetch profile: {}. Original error: {}",
+                            profile_err,
+                            error_text
+                        );
+                    }
+                }
+            }
+
+            anyhow::bail!("Request failed with status {}: {}", status, error_text);
+        }
+
+        let text = response.text().await?;
+        
+        // Check if we got an SSO redirect (session expired)
+        if self.check_and_handle_sso_redirect(&text).await? {
+            println!("🔄 Token renewed, retrying poke...");
+            
+            // Retry the poke after reauth
+            let headers = self.build_headers_remilia().await;
+            let retry_response = self
+                .client
+                .post("https://www.remilia.com/api/poke")
+                .headers(headers)
+                .json(&poke_body)
+                .send()
+                .await
+                .context("Failed to send poke request after reauth")?;
+            
+            let poke_response: PokeResponse = retry_response.json().await?;
+            return Ok(poke_response);
+        }
+        
+        let poke_response: PokeResponse =
+            serde_json::from_str(&text)
+                .with_context(|| format!("Failed to parse poke JSON. Response: {}", &text[..text.len().min(200)]))?;
+
         Ok(poke_response)
     }
 
@@ -436,18 +526,15 @@ impl BeetleApiClient {
         let body = FriendsRequest {
             friend_username: username.to_string(),
         };
-
         let headers = self.build_headers_remilia().await;
-        let response = self
-            .client
-            .post(url)
-            .headers(headers)
-            .json(&body)
-            .send()
-            .await?;
 
-        let friend_response = response.json::<FriendsResponse>().await?;
-        Ok(friend_response)
+        self.remilia_api_request_json(|| {
+            self.client
+                .post(url)
+                .headers(headers.clone())
+                .json(&body)
+        })
+        .await
     }
 
     async fn get_auth_status(&self) -> Result<AuthStatusResponse> {
@@ -633,6 +720,37 @@ impl BeetleApiClient {
         }
 
         Ok(text)
+    }
+
+    /// Helper method for Remilia API requests that returns JSON
+    /// Handles SSO redirect automatically and retries once if needed
+    async fn remilia_api_request_json<T: serde::de::DeserializeOwned>(
+        &self,
+        request_builder: impl Fn() -> reqwest::RequestBuilder,
+    ) -> Result<T> {
+        let response = request_builder().send().await?;
+        let status = response.status();
+        
+        if !status.is_success() {
+            let error_text = response.text().await.unwrap_or_default();
+            anyhow::bail!("Request failed with status {}: {}", status, error_text);
+        }
+
+        let text = response.text().await?;
+
+        // Check if this is an SSO redirect
+        if self.check_and_handle_sso_redirect(&text).await? {
+            println!("🔄 Token renewed, retrying request...");
+            
+            // Retry the request with new token
+            let retry_response = request_builder().send().await?;
+            let result: T = retry_response.json().await?;
+            return Ok(result);
+        }
+
+        let result: T = serde_json::from_str(&text)
+            .context("Failed to parse JSON response")?;
+        Ok(result)
     }
 
     async fn get_friends_page(
@@ -1009,15 +1127,15 @@ fn display_catch_result(response: &CatchBeetleApiResponse) {
     match response {
         CatchBeetleApiResponse::Success { result, user, .. } => {
             println!("\n🎉 ===== CATCH SUCCESS! =====");
-            println!("🪲 Beetle: {} ({})", result.beetle_name, result.beetle);
+            println!("🎯 {}", result.beetle_name);
+            println!("🆔 Type: {}", result.beetle);
             println!("✨ XP Gained: +{}", result.xp);
-            println!("⏰ Cooldown: {}ms", result.cooldown_ms);
-            println!("🎯 Species: {}", result.beetle_card.species);
             println!("\n📊 Your Stats:");
             println!("   Level: {}", user.level);
             println!("   XP: {}", user.xp);
             println!("   Cheese: {}", user.cheese);
             println!("   Total Beetles: {}", user.total_beetles());
+            display_beetle_user(user);
         }
         CatchBeetleApiResponse::Error { error, user, .. } => {
             println!("\n❌ ===== CATCH FAILED =====");
@@ -1054,24 +1172,128 @@ fn display_claim_ubc_result(response: &ClaimUBCApiResponse) {
 fn display_hunt_result(result: &BeetleHuntApiResponse) {
     match result {
         BeetleHuntApiResponse::Success { result, user, .. } => {
-            println!("\n🎉 ===== HUNT SUCCESS! =====");
-            println!("🪲 Caught: {} ({})", result.beetle_name, result.beetle_card.species);
-            println!("✨ XP Gained: +{}", result.xp);
+            println!("\n╔═══════════════════════════════════════════╗");
+            println!("║          🎯 BEETLE HUNT SUCCESS! 🎯       ║");
+            println!("╚═══════════════════════════════════════════╝");
+            println!("🪲 Beetle: {}", result.beetle_name);
+            println!("🏷️  Species: {}", result.beetle_card.species);
+            println!("✨ XP gained: +{}", result.xp);
+            println!("🧀 Cheese: {} (-20)", user.cheese);
+            println!("📊 Level: {} (XP: {})", user.level, user.xp);
             println!("🎯 Hunts used: {}/3", user.beetle_hunts_used);
-            println!("🧀 Cheese remaining: {}", user.cheese);
+            println!("╰─────────────────────────────────────────╯\n");
+            display_beetle_user(user)
         }
         BeetleHuntApiResponse::FailedHunt { user, .. } => {
-            println!("\n💨 ===== BEETLE ESCAPED! =====");
-            println!("The beetle got away this time...");
+            println!("\n╔═══════════════════════════════════════════╗");
+            println!("║          🎯 HUNT FAILED - NOTHING! 💨     ║");
+            println!("╚═══════════════════════════════════════════╝");
+            println!("❌ The beetle got away!");
+            println!("🧀 Cheese: {} (-20)", user.cheese);
             println!("🎯 Hunts used: {}/3", user.beetle_hunts_used);
-            println!("🧀 Cheese remaining: {}", user.cheese);
+            println!("╰─────────────────────────────────────────╯\n");
         }
         BeetleHuntApiResponse::Error { error, user, .. } => {
-            println!("\n❌ ===== HUNT FAILED =====");
+            println!("\n╔═══════════════════════════════════════════╗");
+            println!("║              ❌ HUNT ERROR ❌              ║");
+            println!("╚═══════════════════════════════════════════╝");
             println!("Error: {}", error);
+            println!("🧀 Cheese: {}", user.cheese);
             println!("🎯 Hunts used: {}/3", user.beetle_hunts_used);
+            println!("╰─────────────────────────────────────────╯\n");
         }
     }
+}
+
+pub fn display_beetle_user(user: &User) {
+    println!("\n╔═══════════════════════════════════════════╗");
+    println!("║         🪲 BEETLE USER INFO               ║");
+    println!("╠═══════════════════════════════════════════╣");
+    println!("║ Level:                    {:>15} ║", user.level);
+    println!("║ XP:                       {:>15} ║", user.xp);
+    println!("║ Cheese:                   {:>15} 🧀║", user.cheese);
+    println!("║ Total Beetles:            {:>15} ║", user.total_beetles());
+    println!("╠═══════════════════════════════════════════╣");
+    println!("║ 📦 INVENTORY                              ║");
+    println!("╠═══════════════════════════════════════════╣");
+    println!("║ 🟢 Green:                 {:>15} ║", user.inventory.green);
+    println!(
+        "║ 🔴 Ladybug:               {:>15} ║",
+        user.inventory.ladybug
+    );
+    println!(
+        "║ 🟠 Monarch:               {:>15} ║",
+        user.inventory.monarch
+    );
+    println!("║ 🔵 Pond:                  {:>15} ║", user.inventory.pond);
+    println!(
+        "║ ⚫ Bombardier:            {:>15} ║",
+        user.inventory.bombardier
+    );
+    println!(
+        "║ 🟣 Purple:                {:>15} ║",
+        user.inventory.purple
+    );
+    println!("║ 💀 Skull:                {:>15} ║", user.inventory.skull);
+    println!("╠═══════════════════════════════════════════╣");
+    println!("║ 🔥 STREAKS                                ║");
+    println!("╠═══════════════════════════════════════════╣");
+    println!("║ UBC Streak:               {:>15} ║", user.streaks.ubc);
+    println!(
+        "║ 🪳 Lousy Beetle:          {:>15} ║",
+        user.lousy_beetle_count
+    );
+    // println!(
+    //     "║ 🎲 Pity Counter:          {:>15} ║",
+    //     user.streaks.pity_counter
+    // );
+    println!("╠═══════════════════════════════════════════╣");
+    println!("║ 🎯 HUNTS                                  ║");
+    println!("╠═══════════════════════════════════════════╣");
+    println!(
+        "║ Used Today:               {:>15} ║",
+        user.beetle_hunts_used
+    );
+    println!(
+        "║ Remaining:                {:>15} ║",
+        user.hunts_remaining()
+    );
+    println!("╠═══════════════════════════════════════════╣");
+    println!("║ ⏰ COOLDOWNS                              ║");
+    println!("╠═══════════════════════════════════════════╣");
+
+    if user.can_catch_beetle() {
+        println!("║ 🪲 Catch:                 {:>15} ║", "✅ Ready!");
+    } else {
+        let time = user.time_until_catch_ready();
+        println!(
+            "║ 🪲 Catch:                 {:>15} ║",
+            format_duration(time)
+        );
+    }
+
+    if user.can_claim_ubc() {
+        println!("║ 🧀 UBC Claim:             {:>15} ║", "✅ Ready!");
+    } else {
+        let time = user.time_until_ubc_ready();
+        println!(
+            "║ 🧀 UBC Claim:             {:>15} ║",
+            format_duration(time)
+        );
+    }
+
+    println!("╠═══════════════════════════════════════════╣");
+    println!("║ 📊 LEVEL PROGRESS                         ║");
+    println!("╠═══════════════════════════════════════════╣");
+    println!(
+        "║ XP for Next:              {:>15} ║",
+        user.level_info.xp_needed_for_next
+    );
+    // println!(
+    //     "║ Progress:                 {:>14.1}% ║",
+    //     user.level_info.progress_percent
+    // );
+    println!("╚═══════════════════════════════════════════╝\n");
 }
 
 // ===== WORKER FUNCTIONS =====
@@ -1199,7 +1421,7 @@ async fn beetle_auto_claim_worker(client: Arc<BeetleApiClient>, stats: WorkerSta
 
                 // === CALCULATE NEXT CHECK TIME ===
                 let next_check = if user.can_catch_beetle() {
-                    0
+                    10
                 } else {
                     if user.cheese < 20 {
                         let wait_time = user.time_until_catch_ready();
@@ -1543,10 +1765,10 @@ async fn run_all_workers(client: BeetleApiClient) -> Result<()> {
         daily_poke_worker(client_clone, stats_clone).await
     });
 
-    let client_clone = client.clone();
-    let scrape_handle = tokio::spawn(async move {
-        daily_scrape_worker(client_clone).await
-    });
+    // let client_clone = client.clone();
+    // let scrape_handle = tokio::spawn(async move {
+    //     daily_scrape_worker(client_clone).await
+    // });
 
     tokio::select! {
         _ = signal::ctrl_c() => {
@@ -1556,7 +1778,7 @@ async fn run_all_workers(client: BeetleApiClient) -> Result<()> {
         _ = beetle_handle => {}
         _ = cheese_handle => {}
         _ = poke_handle => {}
-        _ = scrape_handle => {}
+        // _ = scrape_handle => {}
     }
 
     Ok(())

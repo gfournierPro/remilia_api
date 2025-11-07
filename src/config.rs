@@ -9,7 +9,7 @@ pub fn load_auth_token() -> Result<String> {
         .context("Failed to read auth.txt")?
         .trim()
         .to_string();
-    println!("✅ Loaded authentication token: {}", token);
+    println!("✅ Loaded authentication token");
     Ok(token)
 }
 

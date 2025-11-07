@@ -216,7 +216,111 @@ async fn perform_sso_login(driver: &WebDriver, config: &ReauthConfig) -> Result<
     }
 
     let profile_sid_cookie = profile_sid.context("Failed to extract profile.sid cookie from browser")?;
-    let beetle_sid_cookie = beetle_sid.context("Failed to extract beetle.sid cookie from browser")?;
+    
+    // If beetle.sid is not found, navigate to the beetle game to initialize it
+    let beetle_sid_cookie = if beetle_sid.is_none() {
+        println!("⚠️  beetle.sid not found, navigating to beetle game to initialize session...");
+        
+        // Try multiple approaches to get beetle.sid
+        let mut beetle_cookie = None;
+        
+        // Approach 1: Try direct beetle API endpoint
+        println!("🎮 Trying beetle API endpoint...");
+        driver.goto("https://api.remilia.com/beetle/user").await?;
+        sleep(Duration::from_millis(2000)).await;
+        
+        for cookie in &driver.get_all_cookies().await? {
+            if cookie.name == "beetle.sid" {
+                println!("   ✅ Found beetle.sid from API endpoint!");
+                beetle_cookie = Some(cookie.clone());
+                break;
+            }
+        }
+        
+        // Approach 2: Try beetle cartridge page if still not found
+        if beetle_cookie.is_none() {
+            println!("🎮 Trying beetle cartridge page...");
+            driver.goto("https://www.remilia.com/home?cartridge=beetle").await?;
+            sleep(Duration::from_millis(5000)).await; // Wait longer for page to fully load
+            
+            for cookie in &driver.get_all_cookies().await? {
+                if cookie.name == "beetle.sid" {
+                    println!("   ✅ Found beetle.sid from cartridge page!");
+                    beetle_cookie = Some(cookie.clone());
+                    break;
+                }
+            }
+        }
+        
+        // Get cookies again after visiting beetle pages
+        let cookies_after_beetle = driver.get_all_cookies().await?;
+        println!("🍪 Found {} cookies after beetle initialization", cookies_after_beetle.len());
+        
+        for cookie in &cookies_after_beetle {
+            println!("   🍪 Cookie: {} = {}", cookie.name, &cookie.value[..cookie.value.len().min(20)]);
+        }
+        
+        // If we still don't have it, we need to make an authenticated request to beetle API
+        if beetle_cookie.is_none() {
+            println!("⚠️  beetle.sid still not found in browser, trying authenticated API request...");
+            
+            // Make a request to beetle API with profile.sid to initialize beetle session
+            let client = reqwest::Client::builder()
+                .cookie_store(true)
+                .build()?;
+            
+            let mut headers = reqwest::header::HeaderMap::new();
+            let cookie_str = format!("profile.sid={}", profile_sid_cookie.value);
+            headers.insert(
+                reqwest::header::COOKIE,
+                reqwest::header::HeaderValue::from_str(&cookie_str)?,
+            );
+            
+            let response = client
+                .get("https://www.remilia.com/beetle/api/user")
+                .headers(headers.clone())
+                .send()
+                .await?;
+            
+            println!("   📡 Beetle API response status: {}", response.status());
+            
+            // Check response headers for Set-Cookie
+            if let Some(set_cookie) = response.headers().get("set-cookie") {
+                if let Ok(cookie_str) = set_cookie.to_str() {
+                    println!("   🍪 Set-Cookie header: {}", &cookie_str[..cookie_str.len().min(50)]);
+                    
+                    // Parse beetle.sid from Set-Cookie header
+                    if cookie_str.contains("beetle.sid=") {
+                        // Extract value between "beetle.sid=" and ";"
+                        if let Some(start) = cookie_str.find("beetle.sid=") {
+                            let value_start = start + "beetle.sid=".len();
+                            let value_end = cookie_str[value_start..].find(';')
+                                .map(|i| value_start + i)
+                                .unwrap_or(cookie_str.len());
+                            let beetle_sid_value = &cookie_str[value_start..value_end];
+                            
+                            println!("   ✅ Extracted beetle.sid from Set-Cookie header!");
+                            
+                            // Create a cookie object manually
+                            beetle_cookie = Some(Cookie {
+                                name: "beetle.sid".to_string(),
+                                value: beetle_sid_value.to_string(),
+                                domain: Some(".remilia.com".to_string()),
+                                path: Some("/".to_string()),
+                                secure: Some(true),
+                                expiry: None,
+                                same_site: None,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        
+        beetle_cookie.context("Failed to extract beetle.sid cookie - tried browser navigation and API request")?
+    } else {
+        beetle_sid.unwrap()
+    };
 
     // Now use reqwest to make an authenticated request to get the token
     println!("🌐 Making authenticated request to /auth/status...");

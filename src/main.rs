@@ -1051,7 +1051,7 @@ impl FriendsDatabase {
         for record in records.values() {
             if let Some(last) = record.last_poke {
                 let time_since_poke = now - last;
-                
+
                 if time_since_poke < day_in_seconds {
                     let time_until_pokeable = day_in_seconds - time_since_poke;
                     if time_until_pokeable < shortest_wait {
@@ -1475,11 +1475,8 @@ impl BeetleApiClient {
             .await
             .context("Failed to send cooldowns request")?;
 
-
         let status = response.status();
         println!("✅ Response status: {}", status);
-
-
 
         if !status.is_success() {
             let error_text = response.text().await.unwrap_or_default();
@@ -2369,7 +2366,6 @@ impl BeetleApiClient {
         }
         None
     }
-
 
     pub async fn update_theme_to_dark(&mut self) -> Result<UpdateThemeResponse> {
         // First, get current profile to preserve settings
@@ -3639,16 +3635,16 @@ async fn beetle_auto_claim_worker(client: Arc<BeetleApiClient>, stats: WorkerSta
                     0
                 } else {
                     if user.cheese < 20 {
-                            let wait_time = user.time_until_catch_ready();
-                            println!(
-                                "🧀 [BEETLE] Low cheese ({}/20) - waiting for next catch opportunity",
-                                user.cheese
-                            );
-                            wait_time
-                        } else {
-                            let catch_cooldown = user.time_until_catch_ready();
-                            let hunt_reset = user.time_until_hunt_reset();
-                            catch_cooldown.min(hunt_reset)
+                        let wait_time = user.time_until_catch_ready();
+                        println!(
+                            "🧀 [BEETLE] Low cheese ({}/20) - waiting for next catch opportunity",
+                            user.cheese
+                        );
+                        wait_time
+                    } else {
+                        let catch_cooldown = user.time_until_catch_ready();
+                        let hunt_reset = user.time_until_hunt_reset();
+                        catch_cooldown.min(hunt_reset)
                     }
                 };
                 println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");

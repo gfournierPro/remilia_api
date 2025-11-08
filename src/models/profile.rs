@@ -12,15 +12,13 @@ mod string_or_int {
         #[serde(untagged)]
         enum StringOrInt {
             String(String),
-            Int(i32), // Changed to i32 to handle negative numbers
+            Int(i32),                      // Changed to i32 to handle negative numbers
             Array(Vec<serde_json::Value>), // Handle empty arrays
         }
 
         match StringOrInt::deserialize(deserializer) {
             Ok(StringOrInt::String(s)) => {
-                s.parse::<u32>()
-                    .map(Some)
-                    .map_err(serde::de::Error::custom)
+                s.parse::<u32>().map(Some).map_err(serde::de::Error::custom)
             }
             Ok(StringOrInt::Int(i)) => {
                 if i >= 0 {

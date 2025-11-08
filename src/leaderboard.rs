@@ -30,37 +30,43 @@ impl LeaderboardFetcher {
 
     /// Load usernames from friends_db.json
     pub fn load_usernames(&self) -> Result<Vec<String>> {
-        let content = fs::read_to_string(FRIENDS_DB_PATH)
-            .context("Failed to read friends_db.json")?;
-        
-        let json: HashMap<String, Value> = serde_json::from_str(&content)
-            .context("Failed to parse friends_db.json")?;
-        
+        let content =
+            fs::read_to_string(FRIENDS_DB_PATH).context("Failed to read friends_db.json")?;
+
+        let json: HashMap<String, Value> =
+            serde_json::from_str(&content).context("Failed to parse friends_db.json")?;
+
         let mut usernames: Vec<String> = json.keys().cloned().collect();
-        
+
         // Add own user if not already in the list
         if !usernames.contains(&"mao".to_string()) {
             usernames.push("mao".to_string());
         }
-        
+
         Ok(usernames)
     }
 
     /// Fetch profile for a single user
     pub async fn fetch_profile(&self, username: &str) -> Result<ProfileResponse> {
         let url = format!("{}~{}", API_BASE_URL, username);
-        
-        let response = self.client
+
+        let response = self
+            .client
             .get(&url)
             .send()
             .await
             .context(format!("Failed to fetch profile for {}", username))?;
 
         if !response.status().is_success() {
-            anyhow::bail!("API returned error status for {}: {}", username, response.status());
+            anyhow::bail!(
+                "API returned error status for {}: {}",
+                username,
+                response.status()
+            );
         }
 
-        let profile = response.json::<ProfileResponse>()
+        let profile = response
+            .json::<ProfileResponse>()
             .await
             .context(format!("Failed to parse profile response for {}", username))?;
 
@@ -70,15 +76,15 @@ impl LeaderboardFetcher {
     /// Fetch all profiles and build leaderboard
     pub async fn build_leaderboard(&self) -> Result<LeaderboardStats> {
         let mut usernames = self.load_usernames()?;
-        
+
         // Apply test mode limit if set
         if let Some(limit) = self.test_mode_limit {
             usernames.truncate(limit);
         }
-        
+
         let mut stats = LeaderboardStats::new();
         let total = usernames.len();
-        
+
         println!("Fetching profiles for {} users...", total);
         println!("Processing in batches of 100 concurrent requests");
 
@@ -89,59 +95,80 @@ impl LeaderboardFetcher {
 
         for chunk in usernames.chunks(BATCH_SIZE) {
             let chunk_size = chunk.len();
-            println!("Processing batch: {}-{}/{}", processed + 1, processed + chunk_size, total);
+            println!(
+                "Processing batch: {}-{}/{}",
+                processed + 1,
+                processed + chunk_size,
+                total
+            );
 
             // Create futures for all requests in this batch
             let mut fetch_tasks = Vec::new();
             for username in chunk {
                 let username = username.clone();
                 let client = self.client.clone();
-                
+
                 let task = tokio::spawn(async move {
                     let url = format!("{}~{}", API_BASE_URL, username);
-                    
+
                     // Retry logic for 429 errors
                     let mut attempts = 0;
                     loop {
                         let response = client.get(&url).send().await;
-                        
+
                         match response {
                             Ok(resp) if resp.status().is_success() => {
                                 // First get the raw text to debug parsing errors
                                 let text = match resp.text().await {
                                     Ok(t) => t,
-                                    Err(e) => return Err(format!("Failed to read response for {}: {}", username, e)),
+                                    Err(e) => {
+                                        return Err(format!(
+                                            "Failed to read response for {}: {}",
+                                            username, e
+                                        ));
+                                    }
                                 };
-                                
+
                                 match serde_json::from_str::<ProfileResponse>(&text) {
                                     Ok(profile) => return Ok((username, profile)),
                                     Err(e) => {
                                         // Save the problematic response for debugging
-                                        let debug_file = format!("debug_response_{}.json", username);
+                                        let debug_file =
+                                            format!("debug_response_{}.json", username);
                                         let _ = std::fs::write(&debug_file, &text);
-                                        return Err(format!("Parse error for {}: {} (saved to {})", username, e, debug_file));
+                                        return Err(format!(
+                                            "Parse error for {}: {} (saved to {})",
+                                            username, e, debug_file
+                                        ));
                                     }
                                 }
                             }
                             Ok(resp) if resp.status().as_u16() == 429 => {
                                 attempts += 1;
                                 if attempts >= MAX_RETRIES {
-                                    return Err(format!("HTTP 429 Too Many Requests for {} (max retries exceeded)", username));
+                                    return Err(format!(
+                                        "HTTP 429 Too Many Requests for {} (max retries exceeded)",
+                                        username
+                                    ));
                                 }
-                                
+
                                 // Exponential backoff: 2s, 4s, 8s
                                 let delay = INITIAL_RETRY_DELAY_MS * 2_u64.pow(attempts - 1);
-                                eprintln!("Rate limited for {}. Retrying in {}ms... (attempt {}/{})", 
-                                    username, delay, attempts, MAX_RETRIES);
+                                eprintln!(
+                                    "Rate limited for {}. Retrying in {}ms... (attempt {}/{})",
+                                    username, delay, attempts, MAX_RETRIES
+                                );
                                 tokio::time::sleep(tokio::time::Duration::from_millis(delay)).await;
                                 continue;
                             }
-                            Ok(resp) => return Err(format!("HTTP {} for {}", resp.status(), username)),
+                            Ok(resp) => {
+                                return Err(format!("HTTP {} for {}", resp.status(), username));
+                            }
                             Err(e) => return Err(format!("Request error for {}: {}", username, e)),
                         }
                     }
                 });
-                
+
                 fetch_tasks.push(task);
             }
 
@@ -175,8 +202,10 @@ impl LeaderboardFetcher {
             }
 
             processed += chunk_size;
-            println!("  ✓ Completed batch. Total fetched so far: {} (failed 429s: {})", 
-                stats.total_users, failed_429_count);
+            println!(
+                "  ✓ Completed batch. Total fetched so far: {} (failed 429s: {})",
+                stats.total_users, failed_429_count
+            );
 
             // Dynamic delay based on 429 errors
             if processed < total {
@@ -188,16 +217,22 @@ impl LeaderboardFetcher {
                 } else {
                     3000
                 };
-                
+
                 if failed_429_count > 0 {
-                    println!("  ⏳ Waiting {}ms before next batch (rate limit issues detected)...", delay);
+                    println!(
+                        "  ⏳ Waiting {}ms before next batch (rate limit issues detected)...",
+                        delay
+                    );
                 }
-                
+
                 tokio::time::sleep(tokio::time::Duration::from_millis(delay)).await;
             }
         }
 
-        println!("Completed! Successfully fetched {} profiles", stats.total_users);
+        println!(
+            "Completed! Successfully fetched {} profiles",
+            stats.total_users
+        );
         Ok(stats)
     }
 

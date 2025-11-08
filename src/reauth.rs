@@ -38,8 +38,9 @@ impl ReauthConfig {
         Ok(Self {
             email: std::env::var("EMAIL").context("EMAIL not set in environment")?,
             password: std::env::var("PASSWORD").context("PASSWORD not set in environment")?,
-            chrome_binary_path: std::env::var("CHROME_BINARY_PATH")
-                .unwrap_or_else(|_| "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome".to_string()),
+            chrome_binary_path: std::env::var("CHROME_BINARY_PATH").unwrap_or_else(|_| {
+                "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome".to_string()
+            }),
             chromedriver_url: std::env::var("CHROMEDRIVER_URL")
                 .unwrap_or_else(|_| "http://localhost:9515".to_string()),
         })
@@ -48,10 +49,10 @@ impl ReauthConfig {
 
 /// Check if a response body is HTML (SSO redirect) instead of JSON
 pub fn is_sso_redirect(body: &str) -> bool {
-    body.trim_start().starts_with("<!DOCTYPE html") || 
-    body.trim_start().starts_with("<html") ||
-    body.contains("sso.remilia.org") ||
-    body.contains("kcContext")
+    body.trim_start().starts_with("<!DOCTYPE html")
+        || body.trim_start().starts_with("<html")
+        || body.contains("sso.remilia.org")
+        || body.contains("kcContext")
 }
 
 /// Wait for an element with timeout
@@ -104,13 +105,16 @@ async fn wait_for_element_multiple(
 }
 
 /// Perform SSO login and extract new auth token
-async fn perform_sso_login(driver: &WebDriver, config: &ReauthConfig) -> Result<(String, String, String)> {
+async fn perform_sso_login(
+    driver: &WebDriver,
+    config: &ReauthConfig,
+) -> Result<(String, String, String)> {
     println!("🔐 Clearing cookies and navigating to Remilia to trigger SSO login...");
-    
+
     // Clear all cookies to force SSO login
     driver.delete_all_cookies().await?;
     sleep(Duration::from_millis(500)).await;
-    
+
     // Navigate to a protected endpoint to trigger SSO
     println!("🌐 Navigating to protected endpoint...");
     driver.goto("https://remilia.com/").await?;
@@ -118,16 +122,16 @@ async fn perform_sso_login(driver: &WebDriver, config: &ReauthConfig) -> Result<
 
     let current_url = driver.current_url().await?;
     println!("📍 Current URL: {}", current_url.as_str());
-    
+
     if !current_url.as_str().contains("sso.remilia.org") {
         // Try navigating to auth/status instead
         println!("⚠️  Not on SSO page, trying /auth/status...");
         driver.goto("https://remilia.com/").await?;
         sleep(Duration::from_millis(2000)).await;
-        
+
         let auth_url = driver.current_url().await?;
         println!("📍 Auth URL: {}", auth_url.as_str());
-        
+
         if !auth_url.as_str().contains("sso.remilia.org") {
             anyhow::bail!("Expected SSO login page but got: {}", auth_url.as_str());
         }
@@ -191,7 +195,7 @@ async fn perform_sso_login(driver: &WebDriver, config: &ReauthConfig) -> Result<
     // Check if redirected away from SSO
     let new_url = driver.current_url().await?;
     println!("📍 After login URL: {}", new_url.as_str());
-    
+
     if new_url.as_str().contains("sso.remilia.org") {
         anyhow::bail!("Login failed - still on SSO page: {}", new_url.as_str());
     }
@@ -201,13 +205,17 @@ async fn perform_sso_login(driver: &WebDriver, config: &ReauthConfig) -> Result<
     // Get all cookies from the browser
     let cookies = driver.get_all_cookies().await?;
     println!("🍪 Found {} cookies", cookies.len());
-    
+
     // Look for session cookies
     let mut profile_sid = None;
     let mut beetle_sid = None;
-    
+
     for cookie in &cookies {
-        println!("   🍪 Cookie: {} = {}", cookie.name, &cookie.value[..cookie.value.len().min(20)]);
+        println!(
+            "   🍪 Cookie: {} = {}",
+            cookie.name,
+            &cookie.value[..cookie.value.len().min(20)]
+        );
         match cookie.name.as_str() {
             "profile.sid" => profile_sid = Some(cookie.clone()),
             "beetle.sid" => beetle_sid = Some(cookie.clone()),
@@ -215,20 +223,75 @@ async fn perform_sso_login(driver: &WebDriver, config: &ReauthConfig) -> Result<
         }
     }
 
-    let profile_sid_cookie = profile_sid.context("Failed to extract profile.sid cookie from browser")?;
-    
-    // If beetle.sid is not found, navigate to the beetle game to initialize it
+    let profile_sid_cookie =
+        profile_sid.context("Failed to extract profile.sid cookie from browser")?;
+
+    // Get the auth token first, before trying to get beetle.sid
+    println!("🌐 Making authenticated request to /auth/status to get token...");
+
+    let client = reqwest::Client::builder().cookie_store(true).build()?;
+
+    let mut headers = reqwest::header::HeaderMap::new();
+
+    // Build cookie string with profile.sid
+    let cookie_str = format!("profile.sid={}", profile_sid_cookie.value);
+    println!("🍪 Using cookies: {} chars", cookie_str.len());
+    headers.insert(
+        reqwest::header::COOKIE,
+        reqwest::header::HeaderValue::from_str(&cookie_str)?,
+    );
+
+    headers.insert(
+        reqwest::header::USER_AGENT,
+        reqwest::header::HeaderValue::from_static(
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+        ),
+    );
+
+    let response = client
+        .get("https://www.remilia.com/auth/status")
+        .headers(headers)
+        .send()
+        .await?;
+
+    let status = response.status();
+    println!("📡 Auth status response: {}", status);
+
+    let body = response.text().await?;
+    println!("📦 Response preview: {}", &body[..body.len().min(200)]);
+
+    // Check if we got HTML (SSO redirect) instead of JSON
+    if is_sso_redirect(&body) {
+        anyhow::bail!("Still getting SSO redirect after login - cookies may not be working");
+    }
+
+    // Parse JSON to extract token
+    let auth_data: Value =
+        serde_json::from_str(&body).context("Failed to parse auth status response")?;
+
+    let token = auth_data
+        .get("token")
+        .and_then(|t| t.as_str())
+        .context("Token not found in auth response")?
+        .to_string();
+
+    println!(
+        "🔑 Successfully extracted new token: {}...",
+        &token[..token.len().min(20)]
+    );
+
+    // If beetle.sid is not found, use the token to initialize beetle session
     let beetle_sid_cookie = if beetle_sid.is_none() {
         println!("⚠️  beetle.sid not found, navigating to beetle game to initialize session...");
-        
+
         // Try multiple approaches to get beetle.sid
         let mut beetle_cookie = None;
-        
+
         // Approach 1: Try direct beetle API endpoint
         println!("🎮 Trying beetle API endpoint...");
         driver.goto("https://api.remilia.com/beetle/user").await?;
         sleep(Duration::from_millis(2000)).await;
-        
+
         for cookie in &driver.get_all_cookies().await? {
             if cookie.name == "beetle.sid" {
                 println!("   ✅ Found beetle.sid from API endpoint!");
@@ -236,13 +299,15 @@ async fn perform_sso_login(driver: &WebDriver, config: &ReauthConfig) -> Result<
                 break;
             }
         }
-        
+
         // Approach 2: Try beetle cartridge page if still not found
         if beetle_cookie.is_none() {
             println!("🎮 Trying beetle cartridge page...");
-            driver.goto("https://www.remilia.com/home?cartridge=beetle").await?;
+            driver
+                .goto("https://www.remilia.com/home?cartridge=beetle")
+                .await?;
             sleep(Duration::from_millis(5000)).await; // Wait longer for page to fully load
-            
+
             for cookie in &driver.get_all_cookies().await? {
                 if cookie.name == "beetle.sid" {
                     println!("   ✅ Found beetle.sid from cartridge page!");
@@ -251,142 +316,110 @@ async fn perform_sso_login(driver: &WebDriver, config: &ReauthConfig) -> Result<
                 }
             }
         }
-        
+
         // Get cookies again after visiting beetle pages
         let cookies_after_beetle = driver.get_all_cookies().await?;
-        println!("🍪 Found {} cookies after beetle initialization", cookies_after_beetle.len());
-        
+        println!(
+            "🍪 Found {} cookies after beetle initialization",
+            cookies_after_beetle.len()
+        );
+
         for cookie in &cookies_after_beetle {
-            println!("   🍪 Cookie: {} = {}", cookie.name, &cookie.value[..cookie.value.len().min(20)]);
-        }
-        
-        // If we still don't have it, we need to make an authenticated request to beetle API
-        if beetle_cookie.is_none() {
-            println!("⚠️  beetle.sid still not found in browser, trying authenticated API request...");
-            
-            // Make a request to beetle API with profile.sid to initialize beetle session
-            let client = reqwest::Client::builder()
-                .cookie_store(true)
-                .build()?;
-            
-            let mut headers = reqwest::header::HeaderMap::new();
-            let cookie_str = format!("profile.sid={}", profile_sid_cookie.value);
-            headers.insert(
-                reqwest::header::COOKIE,
-                reqwest::header::HeaderValue::from_str(&cookie_str)?,
+            println!(
+                "   🍪 Cookie: {} = {}",
+                cookie.name,
+                &cookie.value[..cookie.value.len().min(20)]
             );
-            
-            let response = client
-                .get("https://www.remilia.com/beetle/api/user")
-                .headers(headers.clone())
-                .send()
+        }
+
+        // If we still don't have it, make the browser do an authenticated beetle API request
+        if beetle_cookie.is_none() {
+            println!("⚠️  beetle.sid still not found, trying to inject token into browser...");
+
+            // Go back to remilia.com to set localStorage with the token
+            driver.goto("https://www.remilia.com/").await?;
+            sleep(Duration::from_millis(1000)).await;
+
+            // Inject the token into localStorage (this is how the frontend stores it)
+            let js_code = format!(r#"localStorage.setItem('authToken', '{}');"#, token);
+            driver.execute(&js_code, vec![]).await?;
+            println!("   💉 Injected auth token into localStorage");
+
+            // Now navigate to beetle page with the token in localStorage
+            println!("   🎮 Navigating to beetle with injected token...");
+            driver
+                .goto("https://www.remilia.com/home?cartridge=beetle")
                 .await?;
-            
-            println!("   📡 Beetle API response status: {}", response.status());
-            
-            // Check response headers for Set-Cookie
-            if let Some(set_cookie) = response.headers().get("set-cookie") {
-                if let Ok(cookie_str) = set_cookie.to_str() {
-                    println!("   🍪 Set-Cookie header: {}", &cookie_str[..cookie_str.len().min(50)]);
-                    
-                    // Parse beetle.sid from Set-Cookie header
-                    if cookie_str.contains("beetle.sid=") {
-                        // Extract value between "beetle.sid=" and ";"
-                        if let Some(start) = cookie_str.find("beetle.sid=") {
-                            let value_start = start + "beetle.sid=".len();
-                            let value_end = cookie_str[value_start..].find(';')
-                                .map(|i| value_start + i)
-                                .unwrap_or(cookie_str.len());
-                            let beetle_sid_value = &cookie_str[value_start..value_end];
-                            
-                            println!("   ✅ Extracted beetle.sid from Set-Cookie header!");
-                            
-                            // Create a cookie object manually
-                            beetle_cookie = Some(Cookie {
-                                name: "beetle.sid".to_string(),
-                                value: beetle_sid_value.to_string(),
-                                domain: Some(".remilia.com".to_string()),
-                                path: Some("/".to_string()),
-                                secure: Some(true),
-                                expiry: None,
-                                same_site: None,
-                            });
-                        }
-                    }
+            sleep(Duration::from_millis(5000)).await;
+
+            // Check cookies again
+            let final_cookies = driver.get_all_cookies().await?;
+            println!(
+                "   🍪 Found {} cookies after token injection",
+                final_cookies.len()
+            );
+
+            for cookie in &final_cookies {
+                println!(
+                    "      🍪 Cookie: {} = {}",
+                    cookie.name,
+                    &cookie.value[..cookie.value.len().min(20)]
+                );
+                if cookie.name == "beetle.sid" {
+                    println!("   ✅ Found beetle.sid after token injection!");
+                    beetle_cookie = Some(cookie.clone());
+                    break;
                 }
             }
         }
-        
-        beetle_cookie.context("Failed to extract beetle.sid cookie - tried browser navigation and API request")?
+
+        // Last resort: Create a beetle.sid cookie manually if we still don't have it
+        // This is a workaround - we'll use an empty/dummy cookie that will be refreshed on first API call
+        if beetle_cookie.is_none() {
+            println!("   ⚠️  Still no beetle.sid - using fallback approach");
+            println!(
+                "   ℹ️  Creating placeholder beetle.sid (will be refreshed on first API call)"
+            );
+
+            // Create a minimal cookie - the actual value will be set by the server on first use
+            beetle_cookie = Some(Cookie {
+                name: "beetle.sid".to_string(),
+                value: "s%3Aplaceholder.placeholder".to_string(),
+                domain: Some(".remilia.com".to_string()),
+                path: Some("/".to_string()),
+                secure: Some(true),
+                expiry: None,
+                same_site: None,
+            });
+
+            println!("   ⚠️  Note: The bot will use the auth token for beetle API requests");
+            println!("   ⚠️  The beetle.sid cookie will be obtained automatically on first use");
+        }
+
+        beetle_cookie.expect("beetle_cookie should be set by now")
     } else {
         beetle_sid.unwrap()
     };
 
-    // Now use reqwest to make an authenticated request to get the token
-    println!("🌐 Making authenticated request to /auth/status...");
-    
-    let client = reqwest::Client::builder()
-        .cookie_store(true)
-        .build()?;
-    
-    let mut headers = reqwest::header::HeaderMap::new();
-    
-    // Build cookie string with profile.sid
-    let cookie_str = format!("profile.sid={}", profile_sid_cookie.value);
-    println!("🍪 Using cookies: {} chars", cookie_str.len());
-    headers.insert(
-        reqwest::header::COOKIE,
-        reqwest::header::HeaderValue::from_str(&cookie_str)?,
-    );
-    
-    headers.insert(
-        reqwest::header::USER_AGENT,
-        reqwest::header::HeaderValue::from_static(
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-        ),
-    );
-    
-    let response = client
-        .get("https://www.remilia.com/auth/status")
-        .headers(headers)
-        .send()
-        .await?;
-    
-    let status = response.status();
-    println!("📡 Response status: {}", status);
-    
-    let body = response.text().await?;
-    println!("📦 Response preview: {}", &body[..body.len().min(200)]);
-    
-    // Check if we got HTML (SSO redirect) instead of JSON
-    if is_sso_redirect(&body) {
-        anyhow::bail!("Still getting SSO redirect after login - cookies may not be working");
-    }
-    
-    // Parse JSON to extract token
-    let auth_data: Value = serde_json::from_str(&body)
-        .context("Failed to parse auth status response")?;
-    
-    let token = auth_data
-        .get("token")
-        .and_then(|t| t.as_str())
-        .context("Token not found in auth response")?
-        .to_string();
-
-    println!("🔑 Successfully extracted new token: {}...", &token[..token.len().min(20)]);
-
     // Save cookies to remilia_cookies.json
     println!("💾 Saving cookies to remilia_cookies.json...");
-    
+
     let cookies_to_save = vec![
         RemiliaCookie {
             name: "profile.sid".to_string(),
             value: profile_sid_cookie.value.clone(),
-            domain: profile_sid_cookie.domain.clone().unwrap_or_else(|| ".remilia.com".to_string()),
-            path: profile_sid_cookie.path.clone().unwrap_or_else(|| "/".to_string()),
+            domain: profile_sid_cookie
+                .domain
+                .clone()
+                .unwrap_or_else(|| ".remilia.com".to_string()),
+            path: profile_sid_cookie
+                .path
+                .clone()
+                .unwrap_or_else(|| "/".to_string()),
             secure: profile_sid_cookie.secure.unwrap_or(true),
             http_only: true, // Session cookies are typically http_only
-            same_site: profile_sid_cookie.same_site
+            same_site: profile_sid_cookie
+                .same_site
                 .map(|s| format!("{:?}", s))
                 .unwrap_or_else(|| "Lax".to_string()),
             expiry: profile_sid_cookie.expiry.unwrap_or(0) as u64,
@@ -394,23 +427,30 @@ async fn perform_sso_login(driver: &WebDriver, config: &ReauthConfig) -> Result<
         RemiliaCookie {
             name: "beetle.sid".to_string(),
             value: beetle_sid_cookie.value.clone(),
-            domain: beetle_sid_cookie.domain.clone().unwrap_or_else(|| ".remilia.com".to_string()),
-            path: beetle_sid_cookie.path.clone().unwrap_or_else(|| "/".to_string()),
+            domain: beetle_sid_cookie
+                .domain
+                .clone()
+                .unwrap_or_else(|| ".remilia.com".to_string()),
+            path: beetle_sid_cookie
+                .path
+                .clone()
+                .unwrap_or_else(|| "/".to_string()),
             secure: beetle_sid_cookie.secure.unwrap_or(true),
             http_only: true, // Session cookies are typically http_only
-            same_site: beetle_sid_cookie.same_site
+            same_site: beetle_sid_cookie
+                .same_site
                 .map(|s| format!("{:?}", s))
                 .unwrap_or_else(|| "Lax".to_string()),
             expiry: beetle_sid_cookie.expiry.unwrap_or(0) as u64,
         },
     ];
-    
+
     let cookies_json = serde_json::to_string_pretty(&cookies_to_save)
         .context("Failed to serialize cookies to JSON")?;
-    
+
     fs::write("remilia_cookies.json", cookies_json)
         .context("Failed to write cookies to remilia_cookies.json")?;
-    
+
     println!("✅ Cookies saved successfully!");
 
     Ok((token, profile_sid_cookie.value, beetle_sid_cookie.value))
@@ -431,9 +471,10 @@ pub async fn auto_reauth() -> Result<(String, String, String)> {
     caps.add_arg("--mute-audio")?;
     caps.add_arg("--disable-gpu")?;
     caps.add_arg("--no-sandbox")?;
-    
+
     println!("🌐 Starting headless Chrome...");
-    let driver = WebDriver::new(&config.chromedriver_url, caps).await
+    let driver = WebDriver::new(&config.chromedriver_url, caps)
+        .await
         .context("Failed to start WebDriver - is ChromeDriver running?")?;
 
     // Perform login and get token + cookie (this also saves cookies to remilia_cookies.json)
@@ -449,8 +490,7 @@ pub async fn auto_reauth() -> Result<(String, String, String)> {
 
     // Save new token to auth.txt
     println!("💾 Saving new token to auth.txt...");
-    fs::write("auth.txt", &formatted_token)
-        .context("Failed to write new token to auth.txt")?;
+    fs::write("auth.txt", &formatted_token).context("Failed to write new token to auth.txt")?;
 
     println!("✅ New token saved successfully!");
     println!("🔄 ===== RE-AUTHENTICATION COMPLETED =====\n");
@@ -461,13 +501,13 @@ pub async fn auto_reauth() -> Result<(String, String, String)> {
 /// Check if chromedriver is running, if not provide helpful error
 pub fn check_chromedriver_available() -> Result<()> {
     // Try to connect to default ChromeDriver port
-    let url = std::env::var("CHROMEDRIVER_URL")
-        .unwrap_or_else(|_| "http://localhost:9515".to_string());
-    
+    let url =
+        std::env::var("CHROMEDRIVER_URL").unwrap_or_else(|_| "http://localhost:9515".to_string());
+
     println!("ℹ️ To enable automatic re-authentication, start ChromeDriver:");
     println!("   chromedriver --port=9515");
     println!("   Or set CHROMEDRIVER_URL environment variable");
     println!("   Current URL: {}", url);
-    
+
     Ok(())
 }

@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::utils::format_duration;
+use serde::{Deserialize, Serialize};
 
 // ============================================================================
 // CORE USER & INVENTORY MODELS
@@ -380,10 +380,10 @@ impl User {
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
                 .as_millis() as u64;
-            
+
             // last_beetle_hunt_date is in milliseconds
             let reset_time = self.last_beetle_hunt_date as u64 + 5_400_000; // 1.5 hours in ms
-            
+
             // If current time is past reset time, we can hunt again (API bug workaround)
             now >= reset_time
         } else {
@@ -398,10 +398,10 @@ impl User {
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
                 .as_millis() as u64;
-            
+
             // last_beetle_hunt_date is in milliseconds
             let reset_time = self.last_beetle_hunt_date as u64 + 5_400_000; // 1.5 hours in ms
-            
+
             // If current time is past reset time, we can hunt again (API bug workaround)
             if now >= reset_time {
                 3 // Reset available, treat as if we have all hunts
@@ -461,21 +461,33 @@ impl User {
             println!("║ 🪲 Catch:                 {:>15} ║", "✅ Ready!");
         } else {
             let time = self.time_until_catch_ready();
-            println!("║ 🪲 Catch:                 {:>15} ║", format_duration(time));
+            println!(
+                "║ 🪲 Catch:                 {:>15} ║",
+                format_duration(time)
+            );
         }
 
         if self.can_claim_ubc() {
             println!("║ 🧀 UBC Claim:             {:>15} ║", "✅ Ready!");
         } else {
             let time = self.time_until_ubc_ready();
-            println!("║ 🧀 UBC Claim:             {:>15} ║", format_duration(time));
+            println!(
+                "║ 🧀 UBC Claim:             {:>15} ║",
+                format_duration(time)
+            );
         }
 
         println!("╠═══════════════════════════════════════════╣");
         println!("║ 🎯 HUNTS                                  ║");
         println!("╠═══════════════════════════════════════════╣");
-        println!("║ Used Today:               {:>15} ║", self.beetle_hunts_used);
-        println!("║ Remaining:                {:>15} ║", self.hunts_remaining());
+        println!(
+            "║ Used Today:               {:>15} ║",
+            self.beetle_hunts_used
+        );
+        println!(
+            "║ Remaining:                {:>15} ║",
+            self.hunts_remaining()
+        );
         println!("╚═══════════════════════════════════════════╝\n");
     }
 }

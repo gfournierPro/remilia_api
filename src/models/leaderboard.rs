@@ -48,7 +48,8 @@ impl LeaderboardStats {
                 self.entries.sort_by(|a, b| b.pokes.cmp(&a.pokes));
             }
             SortBy::SocialCredit => {
-                self.entries.sort_by(|a, b| b.social_credit.cmp(&a.social_credit));
+                self.entries
+                    .sort_by(|a, b| b.social_credit.cmp(&a.social_credit));
             }
         }
     }

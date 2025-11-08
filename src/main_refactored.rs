@@ -5,25 +5,23 @@
 
 mod config;
 mod models;
-mod utils;
 mod reauth;
+mod utils;
 
 use anyhow::{Context, Result};
 use config::{load_auth_token, load_remilia_cookies};
-use models::{
-    beetle::*, database::FriendsDatabase, profile::*,
-};
-use rand::rngs::OsRng;
+use models::{beetle::*, database::FriendsDatabase, profile::*};
 use rand::Rng;
+use rand::rngs::OsRng;
 use reauth::{auto_reauth, is_sso_redirect};
-use reqwest::{header, Client, StatusCode};
+use reqwest::{Client, StatusCode, header};
 use serde::Deserialize;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::signal;
 use tokio::sync::Mutex; // Use tokio::sync::Mutex for async
-use tokio::time::{interval, Duration};
+use tokio::time::{Duration, interval};
 use utils::{extract_cooldown_seconds, format_duration};
 
 // ===== AUTH STATUS STRUCTS =====
@@ -119,7 +117,7 @@ impl AuthStatusResponse {
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
                 .as_secs();
-            
+
             if u.token_expiration > now {
                 u.token_expiration - now
             } else {
@@ -143,19 +141,26 @@ impl AuthStatusResponse {
             println!("║ Email:            {:26} ║", user.email);
             println!("╠═════════════════════════════════════════════╣");
             println!("║ 👉 Pokes:                      {:>12} ║", user.pokes);
-            println!("║ 👥 Friends:                    {:>12} ║", user.friend_count);
+            println!(
+                "║ 👥 Friends:                    {:>12} ║",
+                user.friend_count
+            );
             println!("║ 👀 Page Views:                 {:>12} ║", user.page_views);
             println!("╠═════════════════════════════════════════════╣");
-            println!("║ PFP:              {:26} ║", format!("{} #{}", user.pfp.project, user.pfp.id));
+            println!(
+                "║ PFP:              {:26} ║",
+                format!("{} #{}", user.pfp.project, user.pfp.id)
+            );
             println!("║ Theme:            {:26} ║", user.theme);
             println!("║ Cover:            {:26} ║", user.cover);
             println!("╠═════════════════════════════════════════════╣");
-            
+
             if !user.connections.is_empty() {
                 println!("║ 🔗 CONNECTIONS:                             ║");
                 for conn in &user.connections {
-                    println!("║   {:<10} {:28} ║", 
-                        format!("{}:", conn.connection_type), 
+                    println!(
+                        "║   {:<10} {:28} ║",
+                        format!("{}:", conn.connection_type),
                         conn.username
                     );
                 }
@@ -165,9 +170,10 @@ impl AuthStatusResponse {
             if !user.wallets.is_empty() {
                 println!("║ 💰 WALLETS:                                 ║");
                 for wallet in &user.wallets {
-                    let short_addr = format!("{}...{}", 
-                        &wallet.address[0..6], 
-                        &wallet.address[wallet.address.len()-4..]
+                    let short_addr = format!(
+                        "{}...{}",
+                        &wallet.address[0..6],
+                        &wallet.address[wallet.address.len() - 4..]
                     );
                     println!("║   {:39} ║", short_addr);
                 }
@@ -176,8 +182,10 @@ impl AuthStatusResponse {
 
             let expires_in = self.token_expires_in().unwrap_or(0);
             if expires_in > 0 {
-                println!("║ 🔑 Token expires in: {:>19} ║", 
-                    format_duration(expires_in));
+                println!(
+                    "║ 🔑 Token expires in: {:>19} ║",
+                    format_duration(expires_in)
+                );
             } else {
                 println!("║ 🔑 Token:                      ⚠️  EXPIRED  ║");
             }
@@ -200,9 +208,7 @@ struct BeetleApiClient {
 
 impl BeetleApiClient {
     fn new(auth_token: &str, profile_sid: &str, beetle_sid: &str) -> Result<Self> {
-        let client = Client::builder()
-            .cookie_store(true)
-            .build()?;
+        let client = Client::builder().cookie_store(true).build()?;
 
         Ok(Self {
             client,
@@ -225,7 +231,7 @@ impl BeetleApiClient {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        
+
         // Consider expired if less than 5 minutes remaining
         expiration < now + 300
     }
@@ -241,7 +247,7 @@ impl BeetleApiClient {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        
+
         if expiration > now {
             Some(expiration - now)
         } else {
@@ -255,11 +261,8 @@ impl BeetleApiClient {
         // Build cookie string with both session IDs
         let profile_sid = self.profile_sid.lock().await.clone();
         let beetle_sid = self.beetle_sid.lock().await.clone();
-        
-        let cookie_str = format!(
-            "profile.sid={}; beetle.sid={}",
-            profile_sid, beetle_sid
-        );
+
+        let cookie_str = format!("profile.sid={}; beetle.sid={}", profile_sid, beetle_sid);
 
         headers.insert(
             header::COOKIE,
@@ -271,11 +274,8 @@ impl BeetleApiClient {
             header::CONTENT_TYPE,
             header::HeaderValue::from_static("application/json"),
         );
-        
-        headers.insert(
-            header::ACCEPT,
-            header::HeaderValue::from_static("*/*"),
-        );
+
+        headers.insert(header::ACCEPT, header::HeaderValue::from_static("*/*"));
 
         headers.insert(
             header::ORIGIN,
@@ -286,7 +286,7 @@ impl BeetleApiClient {
             header::REFERER,
             header::HeaderValue::from_static("https://www.remilia.com/"),
         );
-        
+
         headers.insert(
             header::USER_AGENT,
             header::HeaderValue::from_static(
@@ -318,10 +318,7 @@ impl BeetleApiClient {
             header::HeaderValue::from_static("https://remilia.com/"),
         );
 
-        headers.insert(
-            header::ACCEPT,
-            header::HeaderValue::from_static("*/*"),
-        );
+        headers.insert(header::ACCEPT, header::HeaderValue::from_static("*/*"));
 
         headers.insert(
             "sec-fetch-site",
@@ -341,8 +338,7 @@ impl BeetleApiClient {
             })
             .await?;
         // println!("🔍 Raw user response: {}", &text);
-        let user = serde_json::from_str(&text)
-            .context("Failed to parse user JSON")?;
+        let user = serde_json::from_str(&text).context("Failed to parse user JSON")?;
         Ok(user)
     }
 
@@ -357,8 +353,8 @@ impl BeetleApiClient {
             })
             .await?;
         println!("📦 beetle_catch - Raw response: {}", &text);
-        let catch_response = serde_json::from_str(&text)
-            .context("Failed to parse catch beetle JSON")?;
+        let catch_response =
+            serde_json::from_str(&text).context("Failed to parse catch beetle JSON")?;
         Ok(catch_response)
     }
 
@@ -373,14 +369,14 @@ impl BeetleApiClient {
             })
             .await?;
 
-        let claim_response = serde_json::from_str(&text)
-            .context("Failed to parse claim UBC JSON")?;
+        let claim_response =
+            serde_json::from_str(&text).context("Failed to parse claim UBC JSON")?;
         Ok(claim_response)
     }
 
     async fn get_cooldowns(&self) -> Result<CooldownsResponse> {
         println!("📡 Fetching cooldowns...");
-        
+
         let headers = self.build_headers_beetle().await;
         let text = self
             .api_request_with_retry(|| {
@@ -390,9 +386,7 @@ impl BeetleApiClient {
             })
             .await?;
 
-
-        let cooldowns = serde_json::from_str(&text)
-            .context("Failed to parse cooldowns JSON")?;
+        let cooldowns = serde_json::from_str(&text).context("Failed to parse cooldowns JSON")?;
         Ok(cooldowns)
     }
 
@@ -407,21 +401,17 @@ impl BeetleApiClient {
             })
             .await?;
         println!("📦 beetle_hunt - Raw response: {}", &text);
-        let hunt_response = serde_json::from_str(&text)
-            .context("Failed to parse beetle hunt JSON")?;
+        let hunt_response =
+            serde_json::from_str(&text).context("Failed to parse beetle hunt JSON")?;
         Ok(hunt_response)
     }
 
     async fn get_profile(&self, username: &str) -> Result<ProfileResponse> {
         let url = format!("https://www.remilia.com/api/profile/~{}", username);
         let headers = self.build_headers_remilia().await;
-        
-        self.remilia_api_request_json(|| {
-            self.client
-                .get(&url)
-                .headers(headers.clone())
-        })
-        .await
+
+        self.remilia_api_request_json(|| self.client.get(&url).headers(headers.clone()))
+            .await
     }
 
     async fn poke_user(&self, username: &str) -> Result<PokeResponse> {
@@ -494,11 +484,11 @@ impl BeetleApiClient {
         }
 
         let text = response.text().await?;
-        
+
         // Check if we got an SSO redirect (session expired)
         if self.check_and_handle_sso_redirect(&text).await? {
             println!("🔄 Token renewed, retrying poke...");
-            
+
             // Retry the poke after reauth
             let headers = self.build_headers_remilia().await;
             let retry_response = self
@@ -509,14 +499,17 @@ impl BeetleApiClient {
                 .send()
                 .await
                 .context("Failed to send poke request after reauth")?;
-            
+
             let poke_response: PokeResponse = retry_response.json().await?;
             return Ok(poke_response);
         }
-        
-        let poke_response: PokeResponse =
-            serde_json::from_str(&text)
-                .with_context(|| format!("Failed to parse poke JSON. Response: {}", &text[..text.len().min(200)]))?;
+
+        let poke_response: PokeResponse = serde_json::from_str(&text).with_context(|| {
+            format!(
+                "Failed to parse poke JSON. Response: {}",
+                &text[..text.len().min(200)]
+            )
+        })?;
 
         Ok(poke_response)
     }
@@ -528,20 +521,14 @@ impl BeetleApiClient {
         };
         let headers = self.build_headers_remilia().await;
 
-        self.remilia_api_request_json(|| {
-            self.client
-                .post(url)
-                .headers(headers.clone())
-                .json(&body)
-        })
-        .await
+        self.remilia_api_request_json(|| self.client.post(url).headers(headers.clone()).json(&body))
+            .await
     }
 
     async fn get_auth_status(&self) -> Result<AuthStatusResponse> {
         println!("📡 Fetching auth status...");
 
         let headers = self.build_headers_remilia().await;
-        
 
         let response = self
             .client
@@ -553,7 +540,6 @@ impl BeetleApiClient {
 
         let status = response.status();
         println!("✅ Response status: {}", status);
-
 
         // Handle 304 Not Modified (means we're still authenticated)
         if status == StatusCode::NOT_MODIFIED {
@@ -577,15 +563,26 @@ impl BeetleApiClient {
 
         // Update token expiration if we have user info
         if let Some(user) = &auth_status.user {
-            self.token_expiration.store(user.token_expiration, Ordering::Relaxed);
-            
-            let time_until = if user.token_expiration > SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() {
-                user.token_expiration - SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()
+            self.token_expiration
+                .store(user.token_expiration, Ordering::Relaxed);
+
+            let time_until = if user.token_expiration
+                > SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs()
+            {
+                user.token_expiration
+                    - SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs()
             } else {
                 0
             };
-            
-            println!("🔑 Token expiration updated: {} ({} remaining)", 
+
+            println!(
+                "🔑 Token expiration updated: {} ({} remaining)",
                 user.token_expiration,
                 format_duration(time_until)
             );
@@ -598,7 +595,7 @@ impl BeetleApiClient {
     async fn ensure_authenticated(&self) -> Result<()> {
         if self.is_token_expired() {
             println!("⚠️  Token expired or expiring soon, refreshing authentication...");
-            
+
             match self.get_auth_status().await {
                 Ok(auth) => {
                     if !auth.is_authenticated() {
@@ -630,7 +627,7 @@ impl BeetleApiClient {
             if *in_progress {
                 println!("⏳ Re-authentication already in progress, waiting...");
                 drop(in_progress);
-                
+
                 // Wait for the other reauth to complete
                 for _ in 0..30 {
                     tokio::time::sleep(Duration::from_secs(1)).await;
@@ -641,13 +638,13 @@ impl BeetleApiClient {
                 }
                 anyhow::bail!("Timeout waiting for re-authentication to complete");
             }
-            
+
             // Set the flag to indicate we're starting reauth
             *in_progress = true;
         }
-        
+
         println!("🔄 Attempting automatic token renewal...");
-        
+
         let result = match auto_reauth().await {
             Ok((new_token, new_profile_sid, new_beetle_sid)) => {
                 // Update the token, profile_sid, and beetle_sid
@@ -655,10 +652,10 @@ impl BeetleApiClient {
                 *self.profile_sid.lock().await = new_profile_sid;
                 *self.beetle_sid.lock().await = new_beetle_sid;
                 println!("✅ Token and cookies renewed successfully!");
-                
+
                 // Reset expiration to trigger a fresh check
                 self.token_expiration.store(0, Ordering::Relaxed);
-                
+
                 // Verify new token by checking auth status
                 match self.get_auth_status().await {
                     Ok(auth) => {
@@ -678,10 +675,10 @@ impl BeetleApiClient {
                 anyhow::bail!("Failed to renew token: {}", e)
             }
         };
-        
+
         // Clear the reauth in progress flag
         *self.reauth_in_progress.lock().await = false;
-        
+
         result
     }
 
@@ -690,10 +687,10 @@ impl BeetleApiClient {
         if is_sso_redirect(body) {
             println!("⚠️  Detected SSO redirect - token has expired!");
             println!("📡 Response starts with: {}", &body[..body.len().min(100)]);
-            
+
             // Attempt automatic token renewal
             self.renew_token().await?;
-            
+
             Ok(true) // Renewed
         } else {
             Ok(false) // Not an SSO redirect
@@ -712,7 +709,7 @@ impl BeetleApiClient {
         // Check if this is an SSO redirect
         if self.check_and_handle_sso_redirect(&text).await? {
             println!("🔄 Token renewed, retrying request...");
-            
+
             // Retry the request with new token
             let retry_response = request_builder().send().await?;
             let retry_text = retry_response.text().await?;
@@ -730,7 +727,7 @@ impl BeetleApiClient {
     ) -> Result<T> {
         let response = request_builder().send().await?;
         let status = response.status();
-        
+
         if !status.is_success() {
             let error_text = response.text().await.unwrap_or_default();
             anyhow::bail!("Request failed with status {}: {}", status, error_text);
@@ -741,15 +738,14 @@ impl BeetleApiClient {
         // Check if this is an SSO redirect
         if self.check_and_handle_sso_redirect(&text).await? {
             println!("🔄 Token renewed, retrying request...");
-            
+
             // Retry the request with new token
             let retry_response = request_builder().send().await?;
             let result: T = retry_response.json().await?;
             return Ok(result);
         }
 
-        let result: T = serde_json::from_str(&text)
-            .context("Failed to parse JSON response")?;
+        let result: T = serde_json::from_str(&text).context("Failed to parse JSON response")?;
         Ok(result)
     }
 
@@ -1305,10 +1301,7 @@ async fn beetle_auto_claim_worker(client: Arc<BeetleApiClient>, stats: WorkerSta
         Ok(user) => {
             stats.init_inventory(user.inventory.clone()).await;
             let total = stats.get_inventory().await.total_beetles();
-            println!(
-                "✅ Session initialized with {} total beetles",
-                total
-            );
+            println!("✅ Session initialized with {} total beetles", total);
         }
         Err(e) => {
             eprintln!("⚠️  Could not initialize inventory: {}", e);
@@ -1713,7 +1706,7 @@ async fn status_dashboard_worker(stats: WorkerStats, client: Arc<BeetleApiClient
             "║ 🕐 Updated:                       {:>24} ║",
             chrono::Local::now().format("%Y-%m-%d %H:%M:%S")
         );
-        
+
         // Show token expiration status
         if let Some(time_left) = client.time_until_expiration() {
             if time_left > 0 {
@@ -1725,7 +1718,7 @@ async fn status_dashboard_worker(stats: WorkerStats, client: Arc<BeetleApiClient
                 println!("║ 🔑 Token:                         ⚠️  EXPIRED         ║");
             }
         }
-        
+
         println!("╚═══════════════════════════════════════════════════════════╝\n");
     }
 }
@@ -1743,32 +1736,26 @@ async fn run_all_workers(client: BeetleApiClient) -> Result<()> {
 
     let stats_clone = stats.clone();
     let client_clone = client.clone();
-    let dashboard_handle = tokio::spawn(async move {
-        status_dashboard_worker(stats_clone, client_clone).await
-    });
+    let dashboard_handle =
+        tokio::spawn(async move { status_dashboard_worker(stats_clone, client_clone).await });
 
     let stats_clone = stats.clone();
     let client_clone = client.clone();
-    let beetle_handle = tokio::spawn(async move {
-        beetle_auto_claim_worker(client_clone, stats_clone).await
-    });
+    let beetle_handle =
+        tokio::spawn(async move { beetle_auto_claim_worker(client_clone, stats_clone).await });
 
     let stats_clone = stats.clone();
     let client_clone = client.clone();
-    let cheese_handle = tokio::spawn(async move {
-        cheese_auto_claim_worker(client_clone, stats_clone).await
-    });
+    let cheese_handle =
+        tokio::spawn(async move { cheese_auto_claim_worker(client_clone, stats_clone).await });
 
     let stats_clone = stats.clone();
     let client_clone = client.clone();
-    let poke_handle = tokio::spawn(async move {
-        daily_poke_worker(client_clone, stats_clone).await
-    });
+    let poke_handle =
+        tokio::spawn(async move { daily_poke_worker(client_clone, stats_clone).await });
 
-    // let client_clone = client.clone();
-    // let scrape_handle = tokio::spawn(async move {
-    //     daily_scrape_worker(client_clone).await
-    // });
+    let client_clone = client.clone();
+    let scrape_handle = tokio::spawn(async move { daily_scrape_worker(client_clone).await });
 
     tokio::select! {
         _ = signal::ctrl_c() => {
@@ -1791,7 +1778,7 @@ async fn main() -> Result<()> {
 
     // Load environment variables for auto-reauth
     dotenv::dotenv().ok();
-    
+
     // Check if auto-reauth is available
     println!("🔧 Checking automatic re-authentication setup...");
     reauth::check_chromedriver_available()?;
@@ -1808,18 +1795,20 @@ async fn main() -> Result<()> {
             auth.display_info();
             if !auth.is_authenticated() {
                 println!("⚠️  Authentication failed - attempting automatic token renewal...\n");
-                
+
                 // Try to renew the token
                 match client.renew_token().await {
                     Ok(()) => {
                         println!("✅ Token renewed successfully!");
-                        
+
                         // Verify the new token works
                         match client.get_auth_status().await {
                             Ok(renewed_auth) => {
                                 renewed_auth.display_info();
                                 if !renewed_auth.is_authenticated() {
-                                    anyhow::bail!("❌ Token renewal failed - still not authenticated");
+                                    anyhow::bail!(
+                                        "❌ Token renewal failed - still not authenticated"
+                                    );
                                 }
                             }
                             Err(e) => {
@@ -1828,7 +1817,10 @@ async fn main() -> Result<()> {
                         }
                     }
                     Err(e) => {
-                        anyhow::bail!("❌ Failed to renew token: {}\n\nPlease update your auth.txt and remilia_cookies.json files", e);
+                        anyhow::bail!(
+                            "❌ Failed to renew token: {}\n\nPlease update your auth.txt and remilia_cookies.json files",
+                            e
+                        );
                     }
                 }
             }
@@ -1836,12 +1828,12 @@ async fn main() -> Result<()> {
         Err(e) => {
             println!("⚠️  Failed to fetch auth status: {}", e);
             println!("⚠️  Attempting automatic token renewal...\n");
-            
+
             // Try to renew the token even if the request failed
             match client.renew_token().await {
                 Ok(()) => {
                     println!("✅ Token renewed successfully!");
-                    
+
                     // Verify the new token works
                     match client.get_auth_status().await {
                         Ok(renewed_auth) => {
@@ -1856,7 +1848,10 @@ async fn main() -> Result<()> {
                     }
                 }
                 Err(e) => {
-                    anyhow::bail!("❌ Failed to renew token: {}\n\nPlease update your auth.txt and remilia_cookies.json files manually", e);
+                    anyhow::bail!(
+                        "❌ Failed to renew token: {}\n\nPlease update your auth.txt and remilia_cookies.json files manually",
+                        e
+                    );
                 }
             }
         }

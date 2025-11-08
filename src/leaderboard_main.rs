@@ -15,10 +15,10 @@ use models::SortBy;
 async fn main() -> Result<()> {
     // Parse command line arguments
     let args: Vec<String> = env::args().collect();
-    
+
     let mut test_mode = false;
     let mut arg_offset = 1;
-    
+
     // Check for test flag
     if args.len() > 1 && args[1] == "--test" {
         test_mode = true;
@@ -26,7 +26,7 @@ async fn main() -> Result<()> {
         println!("🧪 TEST MODE: Will only process first 10 users");
         println!();
     }
-    
+
     let sort_by = if args.len() > arg_offset {
         match args[arg_offset].to_lowercase().as_str() {
             "beetles" => SortBy::Beetles,
@@ -76,7 +76,8 @@ async fn main() -> Result<()> {
     println!();
     println!("Top 5 users:");
     for (idx, entry) in stats.entries.iter().take(5).enumerate() {
-        println!("  {}. {} (@{}) - Beetles: {}, Pokes: {}, Social Credit: {}",
+        println!(
+            "  {}. {} (@{}) - Beetles: {}, Pokes: {}, Social Credit: {}",
             idx + 1,
             entry.display_name,
             entry.username,

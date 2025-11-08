@@ -168,7 +168,9 @@ impl FriendsDatabase {
         let pokeable: Vec<String> = records
             .values()
             .filter(|record| {
-                record.last_poke.map_or(true, |last| now - last >= day_in_seconds)
+                record
+                    .last_poke
+                    .map_or(true, |last| now - last >= day_in_seconds)
             })
             .map(|record| record.username.clone())
             .collect();

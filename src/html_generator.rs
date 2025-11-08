@@ -238,9 +238,21 @@ impl HtmlGenerator {
             SortBy::SocialCredit => "Social Credit",
         };
 
-        let beetles_active = if matches!(sort_by, SortBy::Beetles) { " active" } else { "" };
-        let pokes_active = if matches!(sort_by, SortBy::Pokes) { " active" } else { "" };
-        let social_active = if matches!(sort_by, SortBy::SocialCredit) { " active" } else { "" };
+        let beetles_active = if matches!(sort_by, SortBy::Beetles) {
+            " active"
+        } else {
+            ""
+        };
+        let pokes_active = if matches!(sort_by, SortBy::Pokes) {
+            " active"
+        } else {
+            ""
+        };
+        let social_active = if matches!(sort_by, SortBy::SocialCredit) {
+            " active"
+        } else {
+            ""
+        };
 
         html = html.replace("{total_users}", &stats.total_users.to_string());
         html = html.replace("{sort_criteria}", sort_criteria);
@@ -250,10 +262,12 @@ impl HtmlGenerator {
 
         // Table rows
         if stats.entries.is_empty() {
-            html.push_str(r#"                    <tr>
+            html.push_str(
+                r#"                    <tr>
                         <td colspan="5" class="empty-state">No users found</td>
                     </tr>
-"#);
+"#,
+            );
         } else {
             for (idx, entry) in stats.entries.iter().enumerate() {
                 let rank = idx + 1;
@@ -264,7 +278,10 @@ impl HtmlGenerator {
                     _ => "rank",
                 };
 
-                let avatar_url = entry.pfp_url.as_deref().unwrap_or("https://via.placeholder.com/40");
+                let avatar_url = entry
+                    .pfp_url
+                    .as_deref()
+                    .unwrap_or("https://via.placeholder.com/40");
 
                 html.push_str(&format!(
                     r#"                    <tr data-beetles="{beetles}" data-pokes="{pokes}" data-social="{social_credit}">

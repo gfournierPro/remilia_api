@@ -1,5 +1,5 @@
-use rand::distributions::Alphanumeric;
 use rand::Rng;
+use rand::distributions::Alphanumeric;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Generate a timestamp for Socket.IO requests

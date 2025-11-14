@@ -2,22 +2,6 @@ use rand::Rng;
 use rand::distributions::Alphanumeric;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-/// Generate a timestamp for Socket.IO requests
-pub fn generate_socket_timestamp() -> String {
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_millis();
-
-    let random: String = rand::thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(8)
-        .map(char::from)
-        .collect();
-
-    format!("{:x}{}", now, random).chars().take(11).collect()
-}
-
 /// Format duration in seconds to human-readable string
 pub fn format_duration(seconds: u64) -> String {
     let hours = seconds / 3600;
@@ -64,17 +48,6 @@ pub fn format_time_ago(timestamp_secs: u64) -> String {
     } else {
         format!("{}d ago", elapsed / 86400)
     }
-}
-
-/// Extract cooldown seconds from error message
-pub fn extract_cooldown_from_error(error: &str) -> Option<u64> {
-    // Parse "Beetle catch on cooldown for 1929s" -> 1929
-    if let Some(start) = error.find("for ") {
-        if let Some(end) = error[start..].find('s') {
-            return error[start + 4..start + end].parse().ok();
-        }
-    }
-    None
 }
 
 /// Extract cooldown seconds from detailed error message

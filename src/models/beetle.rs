@@ -178,21 +178,6 @@ pub struct Cooldowns {
     pub claim_ubc: i64,
 }
 
-/// Hunt information
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct HuntInfo {
-    pub hunts_used: u32,
-    pub reset_time: u64,
-}
-
-/// Cooldowns response
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CooldownsResponse {
-    pub cooldowns: Cooldowns,
-    pub hunt_info: HuntInfo,
-}
 
 // ============================================================================
 // BEETLE CARD & VIDEO INFO
@@ -630,49 +615,5 @@ impl SessionBeetleInventory {
                 "legendary",
             ),
         ]
-    }
-}
-
-// ============================================================================
-// IMPLEMENTATION: CooldownsResponse
-// ============================================================================
-
-impl CooldownsResponse {
-    pub fn can_beetle_catch(&self) -> bool {
-        self.cooldowns.catch_beetle == 0
-    }
-
-    pub fn can_claim_ubc(&self) -> bool {
-        self.cooldowns.claim_ubc == 0
-    }
-
-    pub fn has_hunts_remaining(&self) -> bool {
-        self.hunt_info.hunts_used < 3
-    }
-
-    pub fn time_until_beetle_ready(&self) -> u64 {
-        (self.cooldowns.catch_beetle / 1000) as u64
-    }
-
-    pub fn time_until_ubc_ready(&self) -> u64 {
-        (self.cooldowns.claim_ubc / 1000) as u64
-    }
-
-    pub fn time_until_hunt_reset(&self) -> u64 {
-        if self.hunt_info.reset_time == 0 {
-            return 0;
-        }
-
-        let reset_time_secs = self.hunt_info.reset_time / 1000;
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
-
-        if reset_time_secs > now {
-            reset_time_secs - now
-        } else {
-            0
-        }
     }
 }

@@ -22,7 +22,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::signal;
 use tokio::sync::Mutex; // Use tokio::sync::Mutex for async
 use tokio::time::{Duration, interval};
-use utils::{extract_cooldown_seconds, format_duration};
+use utils::{extract_cooldown_seconds, format_duration,format_time_ago};
 
 // ===== AUTH STATUS STRUCTS =====
 
@@ -374,22 +374,6 @@ impl BeetleApiClient {
         Ok(claim_response)
     }
 
-    async fn get_cooldowns(&self) -> Result<CooldownsResponse> {
-        println!("📡 Fetching cooldowns...");
-
-        let headers = self.build_headers_beetle().await;
-        let text = self
-            .api_request_with_retry(|| {
-                self.client
-                    .get("https://www.remilia.com/beetle/api/cooldowns")
-                    .headers(headers.clone())
-            })
-            .await?;
-
-        let cooldowns = serde_json::from_str(&text).context("Failed to parse cooldowns JSON")?;
-        Ok(cooldowns)
-    }
-
     async fn beetle_hunt(&self) -> Result<BeetleHuntApiResponse> {
         let headers = self.build_headers_beetle().await;
         let text = self
@@ -407,7 +391,7 @@ impl BeetleApiClient {
     }
 
     async fn get_profile(&self, username: &str) -> Result<ProfileResponse> {
-        let url = format!("https://www.remilia.com/api/profile/~{}", username);
+        let url: String = format!("https://www.remilia.com/api/profile/~{}", username);
         let headers = self.build_headers_remilia().await;
 
         self.remilia_api_request_json(|| self.client.get(&url).headers(headers.clone()))
@@ -945,6 +929,16 @@ impl BeetleApiClient {
                     }
                     _ => println!("   ⚠️  Poke failed"),
                 }
+                match self.get_profile(username).await {
+                    Ok(profile) => {
+                        println!(
+                            "   👀 Profile viewed"
+                        );
+                    }
+                    Err(e) => {
+                        println!("   ⚠️  Failed to fetch profile: {}", e);
+                    }
+                }
 
                 tokio::time::sleep(Duration::from_millis(800)).await;
 
@@ -1084,30 +1078,6 @@ impl WorkerStats {
     }
 }
 
-// ===== HELPER FUNCTIONS =====
-
-fn format_time_ago(timestamp_secs: u64) -> String {
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
-
-    if timestamp_secs == 0 || timestamp_secs > now {
-        return "Never".to_string();
-    }
-
-    let elapsed = now - timestamp_secs;
-
-    if elapsed < 60 {
-        format!("{}s ago", elapsed)
-    } else if elapsed < 3600 {
-        format!("{}m ago", elapsed / 60)
-    } else if elapsed < 86400 {
-        format!("{}h ago", elapsed / 3600)
-    } else {
-        format!("{}d ago", elapsed / 86400)
-    }
-}
 
 fn format_timestamp(seconds_from_now: u64) -> String {
     use chrono::{Duration, Local};
@@ -1459,11 +1429,11 @@ async fn cheese_auto_claim_worker(client: Arc<BeetleApiClient>, stats: WorkerSta
             continue;
         }
 
-        match client.get_cooldowns().await {
-            Ok(cooldowns) => {
-                let claim_ubc_seconds = cooldowns.time_until_ubc_ready();
+        match client.get_beetle_user().await {
+            Ok(user) => {
+                let claim_ubc_seconds = user.time_until_ubc_ready();
 
-                if cooldowns.can_claim_ubc() {
+                if user.can_claim_ubc() {
                     println!("🎯 UBC claim is ready!");
 
                     match client.claim_ubc().await {
@@ -1685,7 +1655,7 @@ async fn status_dashboard_worker(stats: WorkerStats, client: Arc<BeetleApiClient
             }
         );
         println!(
-            "║ � Last Cheese:                   {:>24} ║",
+            "║🧀 Last Cheese:                   {:>24} ║",
             if last_cheese > 0 {
                 format_time_ago(last_cheese)
             } else {
@@ -1754,8 +1724,8 @@ async fn run_all_workers(client: BeetleApiClient) -> Result<()> {
     let poke_handle =
         tokio::spawn(async move { daily_poke_worker(client_clone, stats_clone).await });
 
-    let client_clone = client.clone();
-    let scrape_handle = tokio::spawn(async move { daily_scrape_worker(client_clone).await });
+    // let client_clone = client.clone();
+    // let scrape_handle = tokio::spawn(async move { daily_scrape_worker(client_clone).await });
 
     tokio::select! {
         _ = signal::ctrl_c() => {
@@ -1861,3 +1831,8 @@ async fn main() -> Result<()> {
 
     Ok(())
 }
+
+
+// 🎯 UBC claim is ready!
+// ❌ Claim failed: Failed to parse claim UBC JSON
+// ⏳ Retrying in 5 minutes...

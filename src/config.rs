@@ -15,7 +15,7 @@ pub fn load_auth_token() -> Result<String> {
 
 /// Load Remilia cookies from JSON file
 /// Note: Cookies in the JSON file are URL-encoded and should be used as-is
-pub fn load_remilia_cookies() -> Result<(String, String)> {
+pub fn load_remilia_cookies() -> Result<String> {
     let json_data = fs::read_to_string("remilia_cookies.json")
         .context("Failed to read remilia_cookies.json")?;
 
@@ -23,7 +23,6 @@ pub fn load_remilia_cookies() -> Result<(String, String)> {
         serde_json::from_str(&json_data).context("Failed to parse remilia_cookies.json")?;
 
     let mut profile_sid = None;
-    let mut beetle_sid = None;
 
     for cookie in cookies {
         match cookie.name.as_str() {
@@ -31,19 +30,14 @@ pub fn load_remilia_cookies() -> Result<(String, String)> {
                 // Use cookie value as-is (already URL-encoded)
                 profile_sid = Some(cookie.value);
             }
-            "beetle.sid" => {
-                // Use cookie value as-is (already URL-encoded)
-                beetle_sid = Some(cookie.value);
-            }
             _ => {}
         }
     }
 
     let profile_sid =
         profile_sid.context("profile.sid cookie not found in remilia_cookies.json")?;
-    let beetle_sid = beetle_sid.context("beetle.sid cookie not found in remilia_cookies.json")?;
 
-    println!("✅ Loaded profile.sid and beetle.sid cookies");
+    println!("✅ Loaded profile.sid cookie");
 
-    Ok((profile_sid, beetle_sid))
+    Ok(profile_sid)
 }

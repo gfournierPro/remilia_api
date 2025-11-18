@@ -61,7 +61,7 @@ pub struct User {
     pub streaks: Streaks,
 }
 
-/// Beetle inventory
+/// Beetle inventory (kept for backwards compatibility but populated from User fields)
 #[derive(Debug, Deserialize, Serialize, Clone, Default, PartialEq)]
 pub struct BeetleInventory {
     #[serde(default)]
@@ -78,6 +78,14 @@ pub struct BeetleInventory {
     pub purple: i64,
     #[serde(default)]
     pub skull: i64,
+    #[serde(default)]
+    pub stag: i64,
+    #[serde(default)]
+    pub golden: i64,
+    #[serde(default)]
+    pub goliath: i64,
+    #[serde(default)]
+    pub black_widow: i64,
 }
 
 /// Session beetle inventory tracking
@@ -330,8 +338,35 @@ pub enum BeetleHuntApiResponse {
 // ============================================================================
 
 impl User {
+    /// Get consolidated beetle inventory from User fields
+    pub fn get_inventory(&self) -> BeetleInventory {
+        BeetleInventory {
+            green: self.beetle_green,
+            ladybug: self.beetle_ladybug,
+            monarch: self.beetle_monarch,
+            pond: self.beetle_pond,
+            bombardier: self.beetle_bombardier,
+            purple: self.beetle_purple,
+            skull: self.beetle_skull,
+            stag: self.beetle_stag,
+            golden: self.beetle_golden,
+            goliath: self.beetle_goliath,
+            black_widow: self.beetle_black_widow,
+        }
+    }
+
     pub fn total_beetles(&self) -> i64 {
-        self.inventory.total_beetles()
+        self.beetle_green
+            + self.beetle_ladybug
+            + self.beetle_monarch
+            + self.beetle_pond
+            + self.beetle_bombardier
+            + self.beetle_purple
+            + self.beetle_skull
+            + self.beetle_stag
+            + self.beetle_golden
+            + self.beetle_goliath
+            + self.beetle_black_widow
     }
 
     pub fn can_catch_beetle(&self) -> bool {
@@ -490,6 +525,10 @@ impl BeetleInventory {
             + self.bombardier
             + self.purple
             + self.skull
+            + self.stag
+            + self.golden
+            + self.goliath
+            + self.black_widow
     }
 
     pub fn get_sorted_beetles(&self) -> Vec<(&str, &str, i64, &str)> {
@@ -498,9 +537,13 @@ impl BeetleInventory {
             ("🔴", "Ladybug", self.ladybug, "common"),
             ("🟠", "Monarch", self.monarch, "uncommon"),
             ("🔵", "Pond", self.pond, "uncommon"),
+            ("🪲", "Stag", self.stag, "uncommon"),
             ("⚫", "Bombardier", self.bombardier, "rare"),
+            ("🟡", "Golden", self.golden, "rare"),
             ("🟣", "Purple", self.purple, "epic"),
+            ("🦏", "Goliath", self.goliath, "epic"),
             ("💀", "Skull", self.skull, "legendary"),
+            ("🕷️", "Black Widow", self.black_widow, "legendary"),
         ]
     }
 }
@@ -533,9 +576,13 @@ impl SessionBeetleInventory {
             "ladybug" => inv.ladybug,
             "monarch" => inv.monarch,
             "pond" => inv.pond,
+            "stag" => inv.stag,
             "bombardier" => inv.bombardier,
+            "golden" => inv.golden,
             "purple" => inv.purple,
+            "goliath" => inv.goliath,
             "skull" => inv.skull,
+            "black_widow" => inv.black_widow,
             _ => 0,
         }
     }
@@ -545,9 +592,13 @@ impl SessionBeetleInventory {
             + self.current.ladybug
             + self.current.monarch
             + self.current.pond
+            + self.current.stag
             + self.current.bombardier
+            + self.current.golden
             + self.current.purple
+            + self.current.goliath
             + self.current.skull
+            + self.current.black_widow
     }
 
     pub fn total_session_gain(&self) -> i32 {
@@ -556,9 +607,13 @@ impl SessionBeetleInventory {
             + self.session_start.ladybug
             + self.session_start.monarch
             + self.session_start.pond
+            + self.session_start.stag
             + self.session_start.bombardier
+            + self.session_start.golden
             + self.session_start.purple
-            + self.session_start.skull;
+            + self.session_start.goliath
+            + self.session_start.skull
+            + self.session_start.black_widow;
 
         current_total as i32 - start_total as i32
     }
@@ -594,10 +649,24 @@ impl SessionBeetleInventory {
                 "uncommon",
             ),
             (
+                "🪲",
+                "Stag",
+                self.current.stag,
+                self.get_session_delta("stag"),
+                "uncommon",
+            ),
+            (
                 "⚫",
                 "Bombardier",
                 self.current.bombardier,
                 self.get_session_delta("bombardier"),
+                "rare",
+            ),
+            (
+                "🟡",
+                "Golden",
+                self.current.golden,
+                self.get_session_delta("golden"),
                 "rare",
             ),
             (
@@ -608,10 +677,24 @@ impl SessionBeetleInventory {
                 "epic",
             ),
             (
+                "🦏",
+                "Goliath",
+                self.current.goliath,
+                self.get_session_delta("goliath"),
+                "epic",
+            ),
+            (
                 "💀",
                 "Skull",
                 self.current.skull,
                 self.get_session_delta("skull"),
+                "legendary",
+            ),
+            (
+                "🕷️",
+                "Black Widow",
+                self.current.black_widow,
+                self.get_session_delta("black_widow"),
                 "legendary",
             ),
         ]

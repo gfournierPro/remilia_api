@@ -108,7 +108,7 @@ async fn wait_for_element_multiple(
 async fn perform_sso_login(
     driver: &WebDriver,
     config: &ReauthConfig,
-) -> Result<(String, String, String)> {
+) -> Result<(String, String)> {
     println!("🔐 Clearing cookies and navigating to Remilia to trigger SSO login...");
 
     // Clear all cookies to force SSO login
@@ -206,9 +206,8 @@ async fn perform_sso_login(
     let cookies = driver.get_all_cookies().await?;
     println!("🍪 Found {} cookies", cookies.len());
 
-    // Look for session cookies
+    // Look for profile.sid cookie
     let mut profile_sid = None;
-    let mut beetle_sid = None;
 
     for cookie in &cookies {
         println!(
@@ -216,17 +215,15 @@ async fn perform_sso_login(
             cookie.name,
             &cookie.value[..cookie.value.len().min(20)]
         );
-        match cookie.name.as_str() {
-            "profile.sid" => profile_sid = Some(cookie.clone()),
-            "beetle.sid" => beetle_sid = Some(cookie.clone()),
-            _ => {}
+        if cookie.name == "profile.sid" {
+            profile_sid = Some(cookie.clone());
         }
     }
 
     let profile_sid_cookie =
         profile_sid.context("Failed to extract profile.sid cookie from browser")?;
 
-    // Get the auth token first, before trying to get beetle.sid
+    // Get the auth token using the profile.sid cookie
     println!("🌐 Making authenticated request to /auth/status to get token...");
 
     let client = reqwest::Client::builder().cookie_store(true).build()?;
@@ -280,170 +277,28 @@ async fn perform_sso_login(
         &token[..token.len().min(20)]
     );
 
-    // If beetle.sid is not found, use the token to initialize beetle session
-    let beetle_sid_cookie = if beetle_sid.is_none() {
-        println!("⚠️  beetle.sid not found, navigating to beetle game to initialize session...");
-
-        // Try multiple approaches to get beetle.sid
-        let mut beetle_cookie = None;
-
-        // Approach 1: Try direct beetle API endpoint
-        println!("🎮 Trying beetle API endpoint...");
-        driver.goto("https://api.remilia.com/beetle/user").await?;
-        sleep(Duration::from_millis(2000)).await;
-
-        for cookie in &driver.get_all_cookies().await? {
-            if cookie.name == "beetle.sid" {
-                println!("   ✅ Found beetle.sid from API endpoint!");
-                beetle_cookie = Some(cookie.clone());
-                break;
-            }
-        }
-
-        // Approach 2: Try beetle cartridge page if still not found
-        if beetle_cookie.is_none() {
-            println!("🎮 Trying beetle cartridge page...");
-            driver
-                .goto("https://www.remilia.com/home?cartridge=beetle")
-                .await?;
-            sleep(Duration::from_millis(5000)).await; // Wait longer for page to fully load
-
-            for cookie in &driver.get_all_cookies().await? {
-                if cookie.name == "beetle.sid" {
-                    println!("   ✅ Found beetle.sid from cartridge page!");
-                    beetle_cookie = Some(cookie.clone());
-                    break;
-                }
-            }
-        }
-
-        // Get cookies again after visiting beetle pages
-        let cookies_after_beetle = driver.get_all_cookies().await?;
-        println!(
-            "🍪 Found {} cookies after beetle initialization",
-            cookies_after_beetle.len()
-        );
-
-        for cookie in &cookies_after_beetle {
-            println!(
-                "   🍪 Cookie: {} = {}",
-                cookie.name,
-                &cookie.value[..cookie.value.len().min(20)]
-            );
-        }
-
-        // If we still don't have it, make the browser do an authenticated beetle API request
-        if beetle_cookie.is_none() {
-            println!("⚠️  beetle.sid still not found, trying to inject token into browser...");
-
-            // Go back to remilia.com to set localStorage with the token
-            driver.goto("https://www.remilia.com/").await?;
-            sleep(Duration::from_millis(1000)).await;
-
-            // Inject the token into localStorage (this is how the frontend stores it)
-            let js_code = format!(r#"localStorage.setItem('authToken', '{}');"#, token);
-            driver.execute(&js_code, vec![]).await?;
-            println!("   💉 Injected auth token into localStorage");
-
-            // Now navigate to beetle page with the token in localStorage
-            println!("   🎮 Navigating to beetle with injected token...");
-            driver
-                .goto("https://www.remilia.com/home?cartridge=beetle")
-                .await?;
-            sleep(Duration::from_millis(5000)).await;
-
-            // Check cookies again
-            let final_cookies = driver.get_all_cookies().await?;
-            println!(
-                "   🍪 Found {} cookies after token injection",
-                final_cookies.len()
-            );
-
-            for cookie in &final_cookies {
-                println!(
-                    "      🍪 Cookie: {} = {}",
-                    cookie.name,
-                    &cookie.value[..cookie.value.len().min(20)]
-                );
-                if cookie.name == "beetle.sid" {
-                    println!("   ✅ Found beetle.sid after token injection!");
-                    beetle_cookie = Some(cookie.clone());
-                    break;
-                }
-            }
-        }
-
-        // Last resort: Create a beetle.sid cookie manually if we still don't have it
-        // This is a workaround - we'll use an empty/dummy cookie that will be refreshed on first API call
-        if beetle_cookie.is_none() {
-            println!("   ⚠️  Still no beetle.sid - using fallback approach");
-            println!(
-                "   ℹ️  Creating placeholder beetle.sid (will be refreshed on first API call)"
-            );
-
-            // Create a minimal cookie - the actual value will be set by the server on first use
-            beetle_cookie = Some(Cookie {
-                name: "beetle.sid".to_string(),
-                value: "s%3Aplaceholder.placeholder".to_string(),
-                domain: Some(".remilia.com".to_string()),
-                path: Some("/".to_string()),
-                secure: Some(true),
-                expiry: None,
-                same_site: None,
-            });
-
-            println!("   ⚠️  Note: The bot will use the auth token for beetle API requests");
-            println!("   ⚠️  The beetle.sid cookie will be obtained automatically on first use");
-        }
-
-        beetle_cookie.expect("beetle_cookie should be set by now")
-    } else {
-        beetle_sid.unwrap()
-    };
-
     // Save cookies to remilia_cookies.json
-    println!("💾 Saving cookies to remilia_cookies.json...");
+    println!(" Saving cookies to remilia_cookies.json...");
 
-    let cookies_to_save = vec![
-        RemiliaCookie {
-            name: "profile.sid".to_string(),
-            value: profile_sid_cookie.value.clone(),
-            domain: profile_sid_cookie
-                .domain
-                .clone()
-                .unwrap_or_else(|| ".remilia.com".to_string()),
-            path: profile_sid_cookie
-                .path
-                .clone()
-                .unwrap_or_else(|| "/".to_string()),
-            secure: profile_sid_cookie.secure.unwrap_or(true),
-            http_only: true, // Session cookies are typically http_only
-            same_site: profile_sid_cookie
-                .same_site
-                .map(|s| format!("{:?}", s))
-                .unwrap_or_else(|| "Lax".to_string()),
-            expiry: profile_sid_cookie.expiry.unwrap_or(0) as u64,
-        },
-        RemiliaCookie {
-            name: "beetle.sid".to_string(),
-            value: beetle_sid_cookie.value.clone(),
-            domain: beetle_sid_cookie
-                .domain
-                .clone()
-                .unwrap_or_else(|| ".remilia.com".to_string()),
-            path: beetle_sid_cookie
-                .path
-                .clone()
-                .unwrap_or_else(|| "/".to_string()),
-            secure: beetle_sid_cookie.secure.unwrap_or(true),
-            http_only: true, // Session cookies are typically http_only
-            same_site: beetle_sid_cookie
-                .same_site
-                .map(|s| format!("{:?}", s))
-                .unwrap_or_else(|| "Lax".to_string()),
-            expiry: beetle_sid_cookie.expiry.unwrap_or(0) as u64,
-        },
-    ];
+    let cookies_to_save = vec![RemiliaCookie {
+        name: "profile.sid".to_string(),
+        value: profile_sid_cookie.value.clone(),
+        domain: profile_sid_cookie
+            .domain
+            .clone()
+            .unwrap_or_else(|| ".remilia.com".to_string()),
+        path: profile_sid_cookie
+            .path
+            .clone()
+            .unwrap_or_else(|| "/".to_string()),
+        secure: profile_sid_cookie.secure.unwrap_or(true),
+        http_only: true, // Session cookies are typically http_only
+        same_site: profile_sid_cookie
+            .same_site
+            .map(|s| format!("{:?}", s))
+            .unwrap_or_else(|| "Lax".to_string()),
+        expiry: profile_sid_cookie.expiry.unwrap_or(0) as u64,
+    }];
 
     let cookies_json = serde_json::to_string_pretty(&cookies_to_save)
         .context("Failed to serialize cookies to JSON")?;
@@ -453,12 +308,12 @@ async fn perform_sso_login(
 
     println!("✅ Cookies saved successfully!");
 
-    Ok((token, profile_sid_cookie.value, beetle_sid_cookie.value))
+    Ok((token, profile_sid_cookie.value))
 }
 
 /// Automatically re-authenticate and save new token and cookies
 /// Returns (formatted_token, profile_sid)
-pub async fn auto_reauth() -> Result<(String, String, String)> {
+pub async fn auto_reauth() -> Result<(String, String)> {
     println!("\n🔄 ===== AUTOMATIC RE-AUTHENTICATION STARTED =====");
     println!("🔐 Token expired, attempting to get a new one...\n");
 
@@ -483,7 +338,7 @@ pub async fn auto_reauth() -> Result<(String, String, String)> {
     // Clean up
     let _ = driver.quit().await;
 
-    let (new_token, profile_sid, beetle_sid) = result?;
+    let (new_token, profile_sid) = result?;
 
     // Format token with Bearer prefix (same format as auth.txt expects)
     let formatted_token = format!("Bearer {}", new_token);
@@ -495,7 +350,7 @@ pub async fn auto_reauth() -> Result<(String, String, String)> {
     println!("✅ New token saved successfully!");
     println!("🔄 ===== RE-AUTHENTICATION COMPLETED =====\n");
 
-    Ok((formatted_token, profile_sid, beetle_sid))
+    Ok((formatted_token, profile_sid))
 }
 
 /// Check if chromedriver is running, if not provide helpful error

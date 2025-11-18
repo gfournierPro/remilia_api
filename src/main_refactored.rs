@@ -201,20 +201,18 @@ struct BeetleApiClient {
     client: Client,
     auth_token: Arc<Mutex<String>>, // Make mutable for token renewal
     profile_sid: Arc<Mutex<String>>,
-    beetle_sid: Arc<Mutex<String>>,
     token_expiration: Arc<AtomicU64>, // Unix timestamp when token expires
     reauth_in_progress: Arc<Mutex<bool>>, // Prevent multiple simultaneous reauth attempts
 }
 
 impl BeetleApiClient {
-    fn new(auth_token: &str, profile_sid: &str, beetle_sid: &str) -> Result<Self> {
+    fn new(auth_token: &str, profile_sid: &str) -> Result<Self> {
         let client = Client::builder().cookie_store(true).build()?;
 
         Ok(Self {
             client,
             auth_token: Arc::new(Mutex::new(auth_token.to_string())),
             profile_sid: Arc::new(Mutex::new(profile_sid.to_string())),
-            beetle_sid: Arc::new(Mutex::new(beetle_sid.to_string())),
             token_expiration: Arc::new(AtomicU64::new(0)), // Will be set after first auth check
             reauth_in_progress: Arc::new(Mutex::new(false)),
         })
@@ -258,11 +256,10 @@ impl BeetleApiClient {
     async fn build_headers_remilia(&self) -> header::HeaderMap {
         let mut headers = header::HeaderMap::new();
 
-        // Build cookie string with both session IDs
+        // Build cookie string with profile.sid
         let profile_sid = self.profile_sid.lock().await.clone();
-        let beetle_sid = self.beetle_sid.lock().await.clone();
 
-        let cookie_str = format!("profile.sid={}; beetle.sid={}", profile_sid, beetle_sid);
+        let cookie_str = format!("profile.sid={}", profile_sid);
 
         headers.insert(
             header::COOKIE,
@@ -630,11 +627,10 @@ impl BeetleApiClient {
         println!("🔄 Attempting automatic token renewal...");
 
         let result = match auto_reauth().await {
-            Ok((new_token, new_profile_sid, new_beetle_sid)) => {
-                // Update the token, profile_sid, and beetle_sid
+            Ok((new_token, new_profile_sid)) => {
+                // Update the token and profile_sid
                 *self.auth_token.lock().await = new_token;
                 *self.profile_sid.lock().await = new_profile_sid;
-                *self.beetle_sid.lock().await = new_beetle_sid;
                 println!("✅ Token and cookies renewed successfully!");
 
                 // Reset expiration to trigger a fresh check
@@ -1182,25 +1178,14 @@ pub fn display_beetle_user(user: &User) {
     println!("╠═══════════════════════════════════════════╣");
     println!("║ 📦 INVENTORY                              ║");
     println!("╠═══════════════════════════════════════════╣");
-    println!("║ 🟢 Green:                 {:>15} ║", user.inventory.green);
-    println!(
-        "║ 🔴 Ladybug:               {:>15} ║",
-        user.inventory.ladybug
-    );
-    println!(
-        "║ 🟠 Monarch:               {:>15} ║",
-        user.inventory.monarch
-    );
-    println!("║ 🔵 Pond:                  {:>15} ║", user.inventory.pond);
-    println!(
-        "║ ⚫ Bombardier:            {:>15} ║",
-        user.inventory.bombardier
-    );
-    println!(
-        "║ 🟣 Purple:                {:>15} ║",
-        user.inventory.purple
-    );
-    println!("║ 💀 Skull:                {:>15} ║", user.inventory.skull);
+    
+    let inventory = user.get_inventory();
+    for (emoji, name, count, _rarity) in inventory.get_sorted_beetles() {
+        if count > 0 {
+            println!("║ {} {:20} {:>15} ║", emoji, name, count);
+        }
+    }
+    
     println!("╠═══════════════════════════════════════════╣");
     println!("║ 🔥 STREAKS                                ║");
     println!("╠═══════════════════════════════════════════╣");
@@ -1209,10 +1194,6 @@ pub fn display_beetle_user(user: &User) {
         "║ 🪳 Lousy Beetle:          {:>15} ║",
         user.lousy_beetle_count
     );
-    // println!(
-    //     "║ 🎲 Pity Counter:          {:>15} ║",
-    //     user.streaks.pity_counter
-    // );
     println!("╠═══════════════════════════════════════════╣");
     println!("║ 🎯 HUNTS                                  ║");
     println!("╠═══════════════════════════════════════════╣");
@@ -1269,7 +1250,7 @@ async fn beetle_auto_claim_worker(client: Arc<BeetleApiClient>, stats: WorkerSta
 
     match client.get_beetle_user().await {
         Ok(user) => {
-            stats.init_inventory(user.inventory.clone()).await;
+            stats.init_inventory(user.get_inventory()).await;
             let total = stats.get_inventory().await.total_beetles();
             println!("✅ Session initialized with {} total beetles", total);
         }
@@ -1290,7 +1271,7 @@ async fn beetle_auto_claim_worker(client: Arc<BeetleApiClient>, stats: WorkerSta
         match client.get_beetle_user().await {
             Ok(user) => {
                 user.display_status();
-                stats.update_inventory(user.inventory.clone()).await;
+                stats.update_inventory(user.get_inventory()).await;
 
                 // === TRY TO CATCH BEETLE ===
                 if user.can_catch_beetle() {
@@ -1305,7 +1286,7 @@ async fn beetle_auto_claim_worker(client: Arc<BeetleApiClient>, stats: WorkerSta
                                 });
                                 stats.increment_beetles();
                                 stats.increment_catch();
-                                stats.update_inventory(user.inventory).await;
+                                stats.update_inventory(user.get_inventory()).await;
                             }
                             CatchBeetleApiResponse::Error { error, .. } => {
                                 eprintln!("❌ Catch failed: {}", error);
@@ -1557,7 +1538,7 @@ async fn status_dashboard_worker(stats: WorkerStats, client: Arc<BeetleApiClient
 
         match client.get_beetle_user().await {
             Ok(user) => {
-                stats.update_inventory(user.inventory.clone()).await;
+                stats.update_inventory(user.get_inventory()).await;
             }
             Err(e) => {
                 eprintln!("⚠️  Failed to fetch beetle user: {}", e);
@@ -1619,6 +1600,11 @@ async fn status_dashboard_worker(stats: WorkerStats, client: Arc<BeetleApiClient
         println!("║                                                           ║");
 
         for (emoji, rarity, count, delta, _) in inventory.get_sorted_beetles() {
+            // Skip beetles with 0 count
+            if count == 0 {
+                continue;
+            }
+
             let percentage = if total_beetles > 0 {
                 (count as f64 / total_beetles as f64) * 100.0
             } else {
@@ -1701,7 +1687,7 @@ async fn run_all_workers(client: BeetleApiClient) -> Result<()> {
 
     // Initialize session inventory
     if let Ok(user) = client.get_beetle_user().await {
-        stats.init_inventory(user.inventory).await;
+        stats.init_inventory(user.get_inventory()).await;
     }
 
     let stats_clone = stats.clone();
@@ -1724,8 +1710,8 @@ async fn run_all_workers(client: BeetleApiClient) -> Result<()> {
     let poke_handle =
         tokio::spawn(async move { daily_poke_worker(client_clone, stats_clone).await });
 
-    // let client_clone = client.clone();
-    // let scrape_handle = tokio::spawn(async move { daily_scrape_worker(client_clone).await });
+    let client_clone = client.clone();
+    let scrape_handle = tokio::spawn(async move { daily_scrape_worker(client_clone).await });
 
     tokio::select! {
         _ = signal::ctrl_c() => {
@@ -1735,7 +1721,7 @@ async fn run_all_workers(client: BeetleApiClient) -> Result<()> {
         _ = beetle_handle => {}
         _ = cheese_handle => {}
         _ = poke_handle => {}
-        // _ = scrape_handle => {}
+        _ = scrape_handle => {}
     }
 
     Ok(())
@@ -1755,8 +1741,8 @@ async fn main() -> Result<()> {
     println!();
 
     let token = load_auth_token()?;
-    let (profile_sid, beetle_sid) = load_remilia_cookies()?;
-    let client = BeetleApiClient::new(&token, &profile_sid, &beetle_sid)?;
+    let profile_sid = load_remilia_cookies()?;
+    let client = BeetleApiClient::new(&token, &profile_sid)?;
 
     // Check auth status at startup
     println!("🔐 Checking authentication status...\n");
@@ -1831,8 +1817,3 @@ async fn main() -> Result<()> {
 
     Ok(())
 }
-
-
-// 🎯 UBC claim is ready!
-// ❌ Claim failed: Failed to parse claim UBC JSON
-// ⏳ Retrying in 5 minutes...

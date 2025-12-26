@@ -354,15 +354,41 @@ pub async fn auto_reauth() -> Result<(String, String)> {
 }
 
 /// Check if chromedriver is running, if not provide helpful error
-pub fn check_chromedriver_available() -> Result<()> {
+pub async fn check_chromedriver_available() -> Result<()> {
     // Try to connect to default ChromeDriver port
     let url =
         std::env::var("CHROMEDRIVER_URL").unwrap_or_else(|_| "http://localhost:9515".to_string());
 
-    println!("ℹ️ To enable automatic re-authentication, start ChromeDriver:");
-    println!("   chromedriver --port=9515");
-    println!("   Or set CHROMEDRIVER_URL environment variable");
-    println!("   Current URL: {}", url);
+    // Try to make a simple HTTP request to check if ChromeDriver is responding
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(2))
+        .build()?;
+    
+    // ChromeDriver returns its status at /status endpoint
+    let result = client
+        .get(format!("{}/status", url))
+        .send()
+        .await;
 
-    Ok(())
+    match result {
+        Ok(response) if response.status().is_success() => {
+            println!("✅ ChromeDriver is running at {}", url);
+            Ok(())
+        }
+        Ok(response) => {
+            println!("❌ ChromeDriver returned error status: {}", response.status());
+            println!("ℹ️  To enable automatic re-authentication, start ChromeDriver:");
+            println!("   chromedriver --port=9515");
+            println!("   Or set CHROMEDRIVER_URL environment variable");
+            anyhow::bail!("ChromeDriver not available - automatic re-authentication will not work")
+        }
+        Err(e) => {
+            println!("❌ ChromeDriver is not available at {}", url);
+            println!("ℹ️  To enable automatic re-authentication, start ChromeDriver:");
+            println!("   chromedriver --port=9515");
+            println!("   Or set CHROMEDRIVER_URL environment variable");
+            println!("   Error: {}", e);
+            anyhow::bail!("ChromeDriver not available - automatic re-authentication will not work")
+        }
+    }
 }

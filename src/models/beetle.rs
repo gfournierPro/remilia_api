@@ -13,29 +13,7 @@ pub struct User {
     pub keycloak_id: String,
     pub xp: i64,
     pub level: i64,
-    pub cheese: i64,
-    #[serde(rename = "BeetleGreen")]
-    pub beetle_green: i64,
-    #[serde(rename = "BeetleLadybug")]
-    pub beetle_ladybug: i64,
-    #[serde(rename = "BeetlePond")]
-    pub beetle_pond: i64,
-    #[serde(rename = "BeetleStag")]
-    pub beetle_stag: i64,
-    #[serde(rename = "BeetleGolden")]
-    pub beetle_golden: i64,
-    #[serde(rename = "BeetlePurple")]
-    pub beetle_purple: i64,
-    #[serde(rename = "BeetleBombardier")]
-    pub beetle_bombardier: i64,
-    #[serde(rename = "BeetleMonarch")]
-    pub beetle_monarch: i64,
-    #[serde(rename = "BeetleGoliath")]
-    pub beetle_goliath: i64,
-    #[serde(rename = "BeetleSkull")]
-    pub beetle_skull: i64,
-    #[serde(rename = "BeetleBlackWidow")]
-    pub beetle_black_widow: i64,
+    pub inventory: BeetleInventory,
     #[serde(rename = "UBCStreak")]
     pub ubc_streak: i64,
     #[serde(rename = "LastCheeseClaimAt")]
@@ -48,22 +26,27 @@ pub struct User {
     pub beetle_hunts_used: i64,
     #[serde(rename = "LousyBeetleCount")]
     pub lousy_beetle_count: i64,
-    #[serde(rename = "CreatedAt")]
+    #[serde(rename = "created_at")]
     pub created_at: i64,
-    #[serde(rename = "UpdatedAt")]
+    #[serde(rename = "updated_at")]
     pub updated_at: i64,
-    #[serde(rename = "levelInfo")]
+    #[serde(rename = "santafy_credits_available", default)]
+    pub santafy_credits_available: i64,
+    #[serde(default)]
+    pub cooldowns: Cooldowns,
+    #[serde(default)]
+    pub streaks: Streaks,
+    #[serde(rename = "levelInfo", default)]
     pub level_info: LevelInfo,
     #[serde(default)]
     pub discovered: serde_json::Value,
-    pub inventory: BeetleInventory,
-    pub cooldowns: Cooldowns,
-    pub streaks: Streaks,
 }
 
-/// Beetle inventory (kept for backwards compatibility but populated from User fields)
+/// Beetle inventory
 #[derive(Debug, Deserialize, Serialize, Clone, Default, PartialEq)]
 pub struct BeetleInventory {
+    #[serde(default)]
+    pub cheese: i64,
     #[serde(default)]
     pub green: i64,
     #[serde(default)]
@@ -340,33 +323,25 @@ pub enum BeetleHuntApiResponse {
 impl User {
     /// Get consolidated beetle inventory from User fields
     pub fn get_inventory(&self) -> BeetleInventory {
-        BeetleInventory {
-            green: self.beetle_green,
-            ladybug: self.beetle_ladybug,
-            monarch: self.beetle_monarch,
-            pond: self.beetle_pond,
-            bombardier: self.beetle_bombardier,
-            purple: self.beetle_purple,
-            skull: self.beetle_skull,
-            stag: self.beetle_stag,
-            golden: self.beetle_golden,
-            goliath: self.beetle_goliath,
-            black_widow: self.beetle_black_widow,
-        }
+        self.inventory.clone()
+    }
+
+    pub fn cheese(&self) -> i64 {
+        self.inventory.cheese
     }
 
     pub fn total_beetles(&self) -> i64 {
-        self.beetle_green
-            + self.beetle_ladybug
-            + self.beetle_monarch
-            + self.beetle_pond
-            + self.beetle_bombardier
-            + self.beetle_purple
-            + self.beetle_skull
-            + self.beetle_stag
-            + self.beetle_golden
-            + self.beetle_goliath
-            + self.beetle_black_widow
+        self.inventory.green
+            + self.inventory.ladybug
+            + self.inventory.monarch
+            + self.inventory.pond
+            + self.inventory.bombardier
+            + self.inventory.purple
+            + self.inventory.skull
+            + self.inventory.stag
+            + self.inventory.golden
+            + self.inventory.goliath
+            + self.inventory.black_widow
     }
 
     pub fn can_catch_beetle(&self) -> bool {
@@ -471,7 +446,7 @@ impl User {
         println!("╠═══════════════════════════════════════════╣");
         println!("║ Level:                    {:>15} ║", self.level);
         println!("║ XP:                       {:>15} ║", self.xp);
-        println!("║ Cheese:                   {:>15} 🧀║", self.cheese);
+        println!("║ Cheese:                   {:>15} 🧀║", self.cheese());
         println!("║ Total Beetles:            {:>15} ║", self.total_beetles());
         println!("╠═══════════════════════════════════════════╣");
         println!("║ ⏰ COOLDOWNS                              ║");

@@ -23,18 +23,25 @@ if [ -f "$PID_FILE" ]; then
 fi
 
 # Check if chromedriver is installed
-if ! command -v chromedriver &> /dev/null; then
+if [ -f "./chromedriver" ]; then
+    CHROMEDRIVER_BIN="./chromedriver"
+    echo "ℹ️  Using local ChromeDriver: ./chromedriver"
+elif command -v chromedriver &> /dev/null; then
+    CHROMEDRIVER_BIN="chromedriver"
+    echo "ℹ️  Using system ChromeDriver: $(which chromedriver)"
+else
     echo "❌ ChromeDriver not found!"
     echo ""
     echo "Install it with:"
     echo "  macOS:  brew install chromedriver"
     echo "  Linux:  sudo apt install chromium-chromedriver"
+    echo "  Or run: ./update_chromedriver.sh"
     echo "  Or download from: https://chromedriver.chromium.org/"
     exit 1
 fi
 
 # Start ChromeDriver in background
-chromedriver --port=$PORT > chromedriver.log 2>&1 &
+$CHROMEDRIVER_BIN --port=$PORT > chromedriver.log 2>&1 &
 CHROME_PID=$!
 
 # Save PID

@@ -766,23 +766,26 @@ impl BeetleApiClient {
         println!("📊 Database currently has {} usernames\n", initial_count);
 
         // Get first page to determine total
-        let first_page = self.get_friends_page(username, 1, 1000).await?;
+        let first_page = self.get_friends_page(username, 1, 100).await?;
         let total_friends = first_page.total;
-        let total_pages = (total_friends as f32 / 1000.0).ceil() as u32;
+        let total_pages = (total_friends as f32 / 100.0).ceil() as u32;
 
         println!("👥 Target user has {} friends", total_friends);
         println!("📄 Will scrape {} pages\n", total_pages);
 
         let mut all_usernames = Vec::new();
-        let mut errors = 0;
+        let mut consecutive_errors = 0;
+        let mut total_errors = 0;
         let mut filtered_self = 0;
+        let mut retry_delay = 2u64; // Start with 2 second delay for retries
 
-        // Scrape all pages
-        for page in 1..=total_pages {
+        // Scrape all pages with retry logic for rate limits
+        let mut page = 1;
+        while page <= total_pages {
             print!("📄 Page {}/{} ... ", page, total_pages);
             std::io::Write::flush(&mut std::io::stdout())?;
 
-            match self.get_friends_page(username, page, 1000).await {
+            match self.get_friends_page(username, page, 100).await {
                 Ok(response) => {
                     let usernames: Vec<String> = response
                         .friends
@@ -797,7 +800,7 @@ impl BeetleApiClient {
                                 filtered_self += 1;
                                 None
                             } else {
-                                Some(username)
+                                Some(username.trim_start_matches('~').to_string())
                             }
                         })
                         .collect();
@@ -805,20 +808,51 @@ impl BeetleApiClient {
                     println!("✅ Got {} friends", usernames.len());
                     all_usernames.extend(usernames);
 
-                    // Rate limiting
-                    tokio::time::sleep(Duration::from_millis(500)).await;
+                    // Reset error counters on success
+                    consecutive_errors = 0;
+                    retry_delay = 2;
+
+                    // Progressive rate limiting - slower as we go to avoid hitting limits
+                    let delay = if page % 20 == 0 {
+                        // Every 20 pages, take a longer break
+                        println!("   ⏸️  Taking a longer break (5s) to avoid rate limits...");
+                        5000
+                    } else if page % 10 == 0 {
+                        // Every 10 pages, moderate break
+                        2000
+                    } else {
+                        // Normal delay between requests
+                        800
+                    };
+                    
+                    tokio::time::sleep(Duration::from_millis(delay)).await;
+                    page += 1;
                 }
                 Err(e) => {
-                    println!("❌ Error: {}", e);
-                    errors += 1;
+                    let err_msg = e.to_string();
+                    println!("❌ Error: {}", err_msg);
+                    consecutive_errors += 1;
+                    total_errors += 1;
 
-                    // If we get a parsing error, log the raw response for debugging
-                    if errors < 3 {
-                        println!("   ⚠️  Continuing with next page...");
-                        tokio::time::sleep(Duration::from_secs(1)).await;
+                    // Check if it's a rate limit error
+                    if err_msg.contains("429") || err_msg.contains("Too Many Requests") {
+                        println!("   ⚠️  Rate limited! Waiting {}s before retry...", retry_delay);
+                        tokio::time::sleep(Duration::from_secs(retry_delay)).await;
+                        
+                        // Exponential backoff for rate limits
+                        retry_delay = (retry_delay * 2).min(60); // Cap at 60 seconds
+                        
+                        // Don't increment page, retry the same page
                         continue;
+                    }
+
+                    // For other errors
+                    if consecutive_errors < 5 {
+                        println!("   ⚠️  Continuing with next page after {}s delay...", retry_delay);
+                        tokio::time::sleep(Duration::from_secs(retry_delay)).await;
+                        page += 1;
                     } else {
-                        println!("   ❌ Too many errors, stopping scrape");
+                        println!("   ❌ Too many consecutive errors ({}), stopping scrape", consecutive_errors);
                         break;
                     }
                 }
@@ -842,9 +876,11 @@ impl BeetleApiClient {
             sync_stats.initial_count, sync_stats.final_count
         );
         println!("💾 Saved to: {}", db_file);
-        if errors > 0 {
-            println!("⚠️  Encountered {} page errors", errors);
+        if total_errors > 0 {
+            println!("⚠️  Encountered {} total errors ({} pages affected)", total_errors, total_errors);
         }
+        println!("✅ Successfully scraped {} of {} pages", page - 1, total_pages);
+
 
         Ok(())
     }
@@ -926,7 +962,7 @@ impl BeetleApiClient {
                     _ => println!("   ⚠️  Poke failed"),
                 }
                 match self.get_profile(username).await {
-                    Ok(profile) => {
+                    Ok(_profile) => {
                         println!(
                             "   👀 Profile viewed"
                         );
@@ -1095,7 +1131,7 @@ fn display_catch_result(response: &CatchBeetleApiResponse) {
             println!("\n📊 Your Stats:");
             println!("   Level: {}", user.level);
             println!("   XP: {}", user.xp);
-            println!("   Cheese: {}", user.cheese);
+            println!("   Cheese: {}", user.cheese());
             println!("   Total Beetles: {}", user.total_beetles());
             display_beetle_user(user);
         }
@@ -1104,7 +1140,7 @@ fn display_catch_result(response: &CatchBeetleApiResponse) {
             println!("Error: {}", error);
             println!("\n📊 Your Stats:");
             println!("   Level: {}", user.level);
-            println!("   Cheese: {}", user.cheese);
+            println!("   Cheese: {}", user.cheese());
         }
     }
 }
@@ -1119,14 +1155,14 @@ fn display_claim_ubc_result(response: &ClaimUBCApiResponse) {
             println!("\n📊 Your Stats:");
             println!("   Level: {}", user.level);
             println!("   XP: {}", user.xp);
-            println!("   Cheese: {}", user.cheese);
+            println!("   Cheese: {}", user.cheese());
         }
         ClaimUBCApiResponse::Error { error, user, .. } => {
             println!("\n❌ ===== CLAIM FAILED =====");
             println!("Error: {}", error);
             println!("\n📊 Your Stats:");
             println!("   Level: {}", user.level);
-            println!("   Cheese: {}", user.cheese);
+            println!("   Cheese: {}", user.cheese());
         }
     }
 }
@@ -1140,7 +1176,7 @@ fn display_hunt_result(result: &BeetleHuntApiResponse) {
             println!("🪲 Beetle: {}", result.beetle_name);
             println!("🏷️  Species: {}", result.beetle_card.species);
             println!("✨ XP gained: +{}", result.xp);
-            println!("🧀 Cheese: {} (-20)", user.cheese);
+            println!("🧀 Cheese: {} (-20)", user.cheese());
             println!("📊 Level: {} (XP: {})", user.level, user.xp);
             println!("🎯 Hunts used: {}/3", user.beetle_hunts_used);
             println!("╰─────────────────────────────────────────╯\n");
@@ -1151,7 +1187,7 @@ fn display_hunt_result(result: &BeetleHuntApiResponse) {
             println!("║          🎯 HUNT FAILED - NOTHING! 💨     ║");
             println!("╚═══════════════════════════════════════════╝");
             println!("❌ The beetle got away!");
-            println!("🧀 Cheese: {} (-20)", user.cheese);
+            println!("🧀 Cheese: {} (-20)", user.cheese());
             println!("🎯 Hunts used: {}/3", user.beetle_hunts_used);
             println!("╰─────────────────────────────────────────╯\n");
         }
@@ -1160,7 +1196,7 @@ fn display_hunt_result(result: &BeetleHuntApiResponse) {
             println!("║              ❌ HUNT ERROR ❌              ║");
             println!("╚═══════════════════════════════════════════╝");
             println!("Error: {}", error);
-            println!("🧀 Cheese: {}", user.cheese);
+            println!("🧀 Cheese: {}", user.cheese());
             println!("🎯 Hunts used: {}/3", user.beetle_hunts_used);
             println!("╰─────────────────────────────────────────╯\n");
         }
@@ -1173,7 +1209,7 @@ pub fn display_beetle_user(user: &User) {
     println!("╠═══════════════════════════════════════════╣");
     println!("║ Level:                    {:>15} ║", user.level);
     println!("║ XP:                       {:>15} ║", user.xp);
-    println!("║ Cheese:                   {:>15} 🧀║", user.cheese);
+    println!("║ Cheese:                   {:>15} 🧀║", user.cheese());
     println!("║ Total Beetles:            {:>15} ║", user.total_beetles());
     println!("╠═══════════════════════════════════════════╣");
     println!("║ 📦 INVENTORY                              ║");
@@ -1298,10 +1334,10 @@ async fn beetle_auto_claim_worker(client: Arc<BeetleApiClient>, stats: WorkerSta
 
                 // === TRY TO DO BEETLE HUNTS ===
                 if user.has_hunts_remaining() {
-                    if user.cheese < 20 {
+                    if user.cheese() < 20 {
                         println!(
                             "🧀 Insufficient cheese ({}/20) - skipping hunts",
-                            user.cheese
+                            user.cheese()
                         );
                         println!("   Waiting for cheese to regenerate...\n");
                     } else {
@@ -1367,11 +1403,11 @@ async fn beetle_auto_claim_worker(client: Arc<BeetleApiClient>, stats: WorkerSta
                 let next_check = if user.can_catch_beetle() {
                     10
                 } else {
-                    if user.cheese < 20 {
+                    if user.cheese() < 20 {
                         let wait_time = user.time_until_catch_ready();
                         println!(
                             "🧀 [BEETLE] Low cheese ({}/20) - waiting for next catch opportunity",
-                            user.cheese
+                            user.cheese()
                         );
                         wait_time
                     } else {
@@ -1380,6 +1416,7 @@ async fn beetle_auto_claim_worker(client: Arc<BeetleApiClient>, stats: WorkerSta
                         catch_cooldown.min(hunt_reset)
                     }
                 };
+                let next_check = user.time_until_catch_ready();
                 println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
                 println!(
                     "[BEETLE] ⏳ Next check in: {} ({})\n",
@@ -1737,7 +1774,7 @@ async fn main() -> Result<()> {
 
     // Check if auto-reauth is available
     println!("🔧 Checking automatic re-authentication setup...");
-    reauth::check_chromedriver_available()?;
+    reauth::check_chromedriver_available().await?;
     println!();
 
     let token = load_auth_token()?;
@@ -1817,3 +1854,5 @@ async fn main() -> Result<()> {
 
     Ok(())
 }
+
+

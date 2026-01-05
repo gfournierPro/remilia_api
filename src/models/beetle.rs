@@ -40,29 +40,126 @@ pub struct User {
     pub level_info: LevelInfo,
     #[serde(default)]
     pub discovered: serde_json::Value,
+    pub hammers: Vec<Hammer>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Hammer {
+    pub hammer: String,
+    #[serde(rename = "break_rate")]
+    pub break_rate: i64,
+    #[serde(rename = "craft_count")]
+    pub craft_count: i64,
+    #[serde(rename = "base_break_rate")]
+    pub base_break_rate: i64,
+    #[serde(rename = "craft_bonus")]
+    pub craft_bonus: i64,
 }
 
 /// Beetle inventory
 #[derive(Debug, Deserialize, Serialize, Clone, Default, PartialEq)]
 pub struct BeetleInventory {
-    #[serde(default)]
-    pub cheese: i64,
-    #[serde(default)]
-    pub green: i64,
-    #[serde(default)]
-    pub ladybug: i64,
-    #[serde(default)]
-    pub monarch: i64,
-    #[serde(default)]
-    pub pond: i64,
-    #[serde(default)]
+    #[serde(rename = "beetleboy_key")]
+    pub beetleboy_key: i64,
+    #[serde(rename = "bike_reflector")]
+    pub bike_reflector: i64,
     pub bombardier: i64,
-    #[serde(default)]
+    #[serde(rename = "bottle_cap")]
+    pub bottle_cap: i64,
+    pub camellia: i64,
+    pub cheese: i64,
+    #[serde(rename = "chip_bag")]
+    pub chip_bag: i64,
+    #[serde(rename = "chocolate_bar")]
+    pub chocolate_bar: i64,
+    #[serde(rename = "chocolate_wrapper")]
+    pub chocolate_wrapper: i64,
+    pub christmas: i64,
+    #[serde(rename = "cigarette_butt")]
+    pub cigarette_butt: i64,
+    #[serde(rename = "coffee_can")]
+    pub coffee_can: i64,
+    #[serde(rename = "cracker_wrapper")]
+    pub cracker_wrapper: i64,
+    pub daisy: i64,
+    #[serde(rename = "empty_noodle_cup")]
+    pub empty_noodle_cup: i64,
+    #[serde(rename = "gallic_rose")]
+    pub gallic_rose: i64,
+    #[serde(rename = "giraffe_weevil")]
+    pub giraffe_weevil: i64,
+    pub green: i64,
+    #[serde(rename = "green_army_man")]
+    pub green_army_man: i64,
+    #[serde(rename = "gum_wrapper")]
+    pub gum_wrapper: i64,
+    #[serde(rename = "hammer_t1")]
+    pub hammer_t1: i64,
+    #[serde(rename = "hammer_t2")]
+    pub hammer_t2: i64,
+    #[serde(rename = "hammer_t3")]
+    pub hammer_t3: i64,
+    #[serde(rename = "hammer_t4")]
+    pub hammer_t4: i64,
+    #[serde(rename = "imperial_tortoise")]
+    pub imperial_tortoise: i64,
+    #[serde(rename = "jack_adapter")]
+    pub jack_adapter: i64,
+    pub juicebox: i64,
+    #[serde(rename = "junk_cube_t1")]
+    pub junk_cube_t1: i64,
+    #[serde(rename = "junk_cube_t2")]
+    pub junk_cube_t2: i64,
+    pub ladybug: i64,
+    pub marble: i64,
+    pub marigold: i64,
+    #[serde(rename = "milk_thistle")]
+    pub milk_thistle: i64,
+    pub monarch: i64,
+    #[serde(rename = "morning_glory")]
+    pub morning_glory: i64,
+    pub paperclip: i64,
+    pub pebble: i64,
+    pub pillbug: i64,
+    pub pincushion: i64,
+    #[serde(rename = "pokkiri_box")]
+    pub pokkiri_box: i64,
+    #[serde(rename = "pollen_common")]
+    pub pollen_common: i64,
+    #[serde(rename = "pollen_rare")]
+    pub pollen_rare: i64,
+    #[serde(rename = "pollen_uncommon")]
+    pub pollen_uncommon: i64,
+    pub pond: i64,
+    pub poppy: i64,
     pub purple: i64,
-    #[serde(default)]
+    #[serde(rename = "ramune_bottle")]
+    pub ramune_bottle: i64,
+    #[serde(rename = "red_whistle")]
+    pub red_whistle: i64,
+    #[serde(rename = "royal_poinciana")]
+    pub royal_poinciana: i64,
+    #[serde(rename = "rubber_band")]
+    pub rubber_band: i64,
+    #[serde(rename = "sabertooth_longhorn")]
+    pub sabertooth_longhorn: i64,
+    #[serde(rename = "scratch_off")]
+    pub scratch_off: i64,
     pub skull: i64,
-    #[serde(default)]
+    #[serde(rename = "smiley_pebble")]
+    pub smiley_pebble: i64,
+    #[serde(rename = "soda_can_tab")]
+    pub soda_can_tab: i64,
     pub stag: i64,
+    pub stamp: i64,
+    pub sunflower: i64,
+    #[serde(rename = "train_ticket_stub")]
+    pub train_ticket_stub: i64,
+    #[serde(rename = "watch_battery")]
+    pub watch_battery: i64,
+    #[serde(rename = "wine_cork")]
+    pub wine_cork: i64,
     #[serde(default)]
     pub golden: i64,
     #[serde(default)]
@@ -185,7 +282,7 @@ pub struct VideoInfo {
 }
 
 /// Beetle card information
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BeetleCard {
     pub beetle_name: String,
     pub girl_name: String,

@@ -1,5 +1,3 @@
-use rand::Rng;
-use rand::distributions::Alphanumeric;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Format duration in seconds to human-readable string
@@ -19,7 +17,7 @@ pub fn format_duration(seconds: u64) -> String {
 
 /// Format timestamp as local time
 pub fn format_timestamp(seconds_from_now: u64) -> String {
-    use chrono::{DateTime, Duration, Local};
+    use chrono::{Duration, Local};
 
     let now = Local::now();
     let target = now + Duration::seconds(seconds_from_now as i64);

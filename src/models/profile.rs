@@ -144,7 +144,6 @@ pub struct FriendsListResponse {
 pub struct Achievement {
     pub id: u32,
     pub granted_at: String,
-    pub _id: String,
     pub title: String,
     pub description: String,
     pub grant_message: String,
@@ -152,6 +151,8 @@ pub struct Achievement {
     pub achievement_type: String,
     pub trigger: String,
     pub season: u32,
+    #[serde(skip)]
+    pub _id: String,
 }
 
 /// Achievement context

@@ -178,7 +178,7 @@ impl LeaderboardFetcher {
             // Process results
             for result in results {
                 match result {
-                    Ok(Ok((username, profile))) => {
+                    Ok(Ok((_username, profile))) => {
                         let entry = LeaderboardEntry {
                             username: profile.user.username.clone(),
                             display_name: profile.user.display_name.clone(),

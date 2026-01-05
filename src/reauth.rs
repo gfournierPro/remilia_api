@@ -206,9 +206,9 @@ async fn perform_sso_login(
     let cookies = driver.get_all_cookies().await?;
     println!("🍪 Found {} cookies", cookies.len());
 
-    // Look for profile.sid cookie
+    // Look for profile.sid cookie and collect cookie header string
     let mut profile_sid = None;
-
+    let mut cookie_pairs: Vec<String> = Vec::new();
     for cookie in &cookies {
         println!(
             "   🍪 Cookie: {} = {}",
@@ -218,26 +218,28 @@ async fn perform_sso_login(
         if cookie.name == "profile.sid" {
             profile_sid = Some(cookie.clone());
         }
+        // push name=value pairs for cookie header (send as-is)
+        cookie_pairs.push(format!("{}={}", cookie.name, cookie.value));
     }
 
     let profile_sid_cookie =
         profile_sid.context("Failed to extract profile.sid cookie from browser")?;
 
-    // Get the auth token using the profile.sid cookie
+    // Build cookie string with all cookies (so authToken or other cookies are included)
+    let cookie_str = cookie_pairs.join("; ");
+    println!("🍪 Using cookies header ({} chars)", cookie_str.len());
+
+    // Get the auth token using the browser cookies. Use the current browser host when
+    // requesting /auth/status so we match the domain we were redirected to (remilia.net vs remilia.com).
     println!("🌐 Making authenticated request to /auth/status to get token...");
 
     let client = reqwest::Client::builder().cookie_store(true).build()?;
 
     let mut headers = reqwest::header::HeaderMap::new();
-
-    // Build cookie string with profile.sid
-    let cookie_str = format!("profile.sid={}", profile_sid_cookie.value);
-    println!("🍪 Using cookies: {} chars", cookie_str.len());
     headers.insert(
         reqwest::header::COOKIE,
         reqwest::header::HeaderValue::from_str(&cookie_str)?,
     );
-
     headers.insert(
         reqwest::header::USER_AGENT,
         reqwest::header::HeaderValue::from_static(
@@ -245,11 +247,15 @@ async fn perform_sso_login(
         ),
     );
 
-    let response = client
-        .get("https://www.remilia.com/auth/status")
-        .headers(headers)
-        .send()
-        .await?;
+    // Prefer the host we were redirected to (driver.current_url()) so the cookie domain matches.
+    let current_host = new_url
+        .host_str()
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| "www.remilia.com".to_string());
+
+    let auth_status_url = format!("https://{}/auth/status", current_host);
+
+    let response = client.get(&auth_status_url).headers(headers).send().await?;
 
     let status = response.status();
     println!("📡 Auth status response: {}", status);
@@ -262,43 +268,49 @@ async fn perform_sso_login(
         anyhow::bail!("Still getting SSO redirect after login - cookies may not be working");
     }
 
-    // Parse JSON to extract token
-    let auth_data: Value =
-        serde_json::from_str(&body).context("Failed to parse auth status response")?;
+    // Parse JSON to extract token (if present). If token is not present, fall back to authToken cookie
+    let auth_data: Value = serde_json::from_str(&body).context("Failed to parse auth status response")?;
 
-    let token = auth_data
-        .get("token")
-        .and_then(|t| t.as_str())
-        .context("Token not found in auth response")?
-        .to_string();
+    // Try to obtain token from JSON
+    let mut token_opt = auth_data.get("token").and_then(|t| t.as_str()).map(|s| s.to_string());
+
+    // If no token in JSON, try to find an authToken cookie from the browser cookies
+    if token_opt.is_none() {
+        if let Some(c) = cookies.iter().find(|c| c.name == "authToken") {
+            token_opt = Some(c.value.clone());
+            println!("ℹ️  Using authToken cookie as fallback token (from browser)");
+        }
+    }
+
+    let token = token_opt.context("Token not found in auth response or browser cookies")?;
 
     println!(
         "🔑 Successfully extracted new token: {}...",
         &token[..token.len().min(20)]
     );
 
-    // Save cookies to remilia_cookies.json
+    // Save cookies to remilia_cookies.json (save all cookies we received from the browser)
     println!(" Saving cookies to remilia_cookies.json...");
 
-    let cookies_to_save = vec![RemiliaCookie {
-        name: "profile.sid".to_string(),
-        value: profile_sid_cookie.value.clone(),
-        domain: profile_sid_cookie
-            .domain
-            .clone()
-            .unwrap_or_else(|| ".remilia.com".to_string()),
-        path: profile_sid_cookie
-            .path
-            .clone()
-            .unwrap_or_else(|| "/".to_string()),
-        secure: profile_sid_cookie.secure.unwrap_or(true),
-        http_only: true, // Session cookies are typically http_only
-        same_site: profile_sid_cookie
-            .same_site
-            .map(|s| format!("{:?}", s))
-            .unwrap_or_else(|| "Lax".to_string()),
-        expiry: profile_sid_cookie.expiry.unwrap_or(0) as u64,
-    }];
+    let mut cookies_to_save: Vec<RemiliaCookie> = Vec::new();
+    for c in &cookies {
+        cookies_to_save.push(RemiliaCookie {
+            name: c.name.clone(),
+            value: c.value.clone(),
+            domain: c
+                .domain
+                .clone()
+                .unwrap_or_else(|| current_host.clone()),
+            path: c.path.clone().unwrap_or_else(|| "/".to_string()),
+            secure: c.secure.unwrap_or(true),
+            http_only: true,
+            same_site: c
+                .same_site
+                .map(|s| format!("{:?}", s))
+                .unwrap_or_else(|| "Lax".to_string()),
+            expiry: c.expiry.unwrap_or(0) as u64,
+        });
+    }
 
     let cookies_json = serde_json::to_string_pretty(&cookies_to_save)
         .context("Failed to serialize cookies to JSON")?;

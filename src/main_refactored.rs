@@ -16,6 +16,7 @@ use rand::rngs::OsRng;
 use reauth::{auto_reauth, is_sso_redirect};
 use reqwest::{Client, StatusCode, header};
 use serde::Deserialize;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -23,6 +24,8 @@ use tokio::signal;
 use tokio::sync::Mutex; // Use tokio::sync::Mutex for async
 use tokio::time::{Duration, interval};
 use utils::{extract_cooldown_seconds, format_duration,format_time_ago};
+
+use crate::models::{CraftRequest, CraftResponse, OrganizedInventory};
 
 // ===== AUTH STATUS STRUCTS =====
 
@@ -256,10 +259,21 @@ impl BeetleApiClient {
     async fn build_headers_remilia(&self) -> header::HeaderMap {
         let mut headers = header::HeaderMap::new();
 
-        // Build cookie string with profile.sid
+        // Build cookie string with profile.sid and authToken (if available)
         let profile_sid = self.profile_sid.lock().await.clone();
+        let auth_token = self.auth_token.lock().await.clone();
 
-        let cookie_str = format!("profile.sid={}", profile_sid);
+        let mut cookie_parts: Vec<String> = Vec::new();
+        // If auth_token is a Bearer token, include it as authToken cookie as browsers do
+        if let Some(t) = auth_token.strip_prefix("Bearer ") {
+            let t = t.trim();
+            if !t.is_empty() {
+                cookie_parts.push(format!("authToken={}", t));
+            }
+        }
+
+        cookie_parts.push(format!("profile.sid={}", profile_sid));
+        let cookie_str = cookie_parts.join("; ");
 
         headers.insert(
             header::COOKIE,
@@ -274,14 +288,15 @@ impl BeetleApiClient {
 
         headers.insert(header::ACCEPT, header::HeaderValue::from_static("*/*"));
 
+        // Prefer remilia.net (the SSO redirects there) for origin/referer so cookies match
         headers.insert(
             header::ORIGIN,
-            header::HeaderValue::from_static("https://www.remilia.com"),
+            header::HeaderValue::from_static("https://www.remilia.net"),
         );
 
         headers.insert(
             header::REFERER,
-            header::HeaderValue::from_static("https://www.remilia.com/"),
+            header::HeaderValue::from_static("https://www.remilia.net/"),
         );
 
         headers.insert(
@@ -307,12 +322,12 @@ impl BeetleApiClient {
 
         headers.insert(
             header::ORIGIN,
-            header::HeaderValue::from_static("https://remilia.com"),
+            header::HeaderValue::from_static("https://remilia.net"),
         );
 
         headers.insert(
             header::REFERER,
-            header::HeaderValue::from_static("https://remilia.com/"),
+            header::HeaderValue::from_static("https://remilia.net/"),
         );
 
         headers.insert(header::ACCEPT, header::HeaderValue::from_static("*/*"));
@@ -330,7 +345,7 @@ impl BeetleApiClient {
         let text = self
             .api_request_with_retry(|| {
                 self.client
-                    .get("https://www.remilia.com/beetle/api/user")
+                    .get("https://www.remilia.net/beetle/api/user")
                     .headers(headers.clone())
             })
             .await?;
@@ -344,7 +359,7 @@ impl BeetleApiClient {
         let text = self
             .api_request_with_retry(|| {
                 self.client
-                    .post("https://www.remilia.com/beetle/api/action/catchBeetle")
+                    .post("https://www.remilia.net/beetle/api/action/catchBeetle")
                     .headers(headers.clone())
                     .json(&CatchBeetleRequest {})
             })
@@ -360,7 +375,7 @@ impl BeetleApiClient {
         let text = self
             .api_request_with_retry(|| {
                 self.client
-                    .post("https://www.remilia.com/beetle/api/action/claimUBC")
+                    .post("https://www.remilia.net/beetle/api/action/claimUBC")
                     .headers(headers.clone())
                     .json(&ClaimUBCRequest {})
             })
@@ -376,7 +391,7 @@ impl BeetleApiClient {
         let text = self
             .api_request_with_retry(|| {
                 self.client
-                    .post("https://www.remilia.com/beetle/api/action/beetleHunt")
+                    .post("https://www.remilia.net/beetle/api/action/beetleHunt")
                     .headers(headers.clone())
                     .json(&BeetleHuntRequest {})
             })
@@ -388,7 +403,7 @@ impl BeetleApiClient {
     }
 
     async fn get_profile(&self, username: &str) -> Result<ProfileResponse> {
-        let url: String = format!("https://www.remilia.com/api/profile/~{}", username);
+        let url: String = format!("https://www.remilia.net/api/profile/~{}", username);
         let headers = self.build_headers_remilia().await;
 
         self.remilia_api_request_json(|| self.client.get(&url).headers(headers.clone()))
@@ -405,7 +420,7 @@ impl BeetleApiClient {
 
         let response = self
             .client
-            .post("https://www.remilia.com/api/poke")
+            .post("https://www.remilia.net/api/poke")
             .headers(headers.clone())
             .json(&poke_body)
             .send()
@@ -474,7 +489,7 @@ impl BeetleApiClient {
             let headers = self.build_headers_remilia().await;
             let retry_response = self
                 .client
-                .post("https://www.remilia.com/api/poke")
+                .post("https://www.remilia.net/api/poke")
                 .headers(headers)
                 .json(&poke_body)
                 .send()
@@ -496,7 +511,7 @@ impl BeetleApiClient {
     }
 
     async fn send_friend_request(&self, username: &str) -> Result<FriendsResponse> {
-        let url = "https://www.remilia.com/api/friends/request";
+        let url = "https://www.remilia.net/api/friends/request";
         let body = FriendsRequest {
             friend_username: username.to_string(),
         };
@@ -511,9 +526,19 @@ impl BeetleApiClient {
 
         let headers = self.build_headers_remilia().await;
 
+        // Debug: print outgoing important headers to help diagnose auth failures
+        if let Some(cookie_val) = headers.get(header::COOKIE) {
+            println!("🔍 Outgoing Cookie header: {}", cookie_val.to_str().unwrap_or("<binary>"));
+        } else {
+            println!("🔍 No Cookie header set for auth status request");
+        }
+        if let Some(origin_val) = headers.get(header::ORIGIN) {
+            println!("🔍 Outgoing Origin header: {}", origin_val.to_str().unwrap_or("<binary>"));
+        }
+
         let response = self
             .client
-            .get("https://www.remilia.com/auth/status")
+            .get("https://www.remilia.net/auth/status")
             .headers(headers)
             .send()
             .await
@@ -538,6 +563,7 @@ impl BeetleApiClient {
         }
 
         let text = response.text().await?;
+        println!("📦 Raw auth/status response body: {}", &text[..text.len().min(1000)]);
 
         let auth_status: AuthStatusResponse =
             serde_json::from_str(&text).context("Failed to parse auth status JSON")?;
@@ -736,7 +762,7 @@ impl BeetleApiClient {
         limit: u32,
     ) -> Result<FriendsListResponse> {
         let url = format!(
-            "https://www.remilia.com/identity/friends?username={}&page={}&limit={}",
+            "https://www.remilia.net/identity/friends?username={}&page={}&limit={}",
             username, page, limit
         );
 
@@ -744,7 +770,7 @@ impl BeetleApiClient {
             .client
             .get(&url)
             .headers(self.build_headers_remilia().await)
-            .header("Referer", format!("https://www.remilia.com/~{}", username))
+            .header("Referer", format!("https://www.remilia.net/~{}", username))
             .send()
             .await?;
 
@@ -1010,6 +1036,145 @@ impl BeetleApiClient {
 
         Ok((poke_success, friend_success))
     }
+
+    async fn auto_merge_trash(&self) -> Result<i32> {
+        let mut junk_count = 0;
+        let file_path = PathBuf::from("data").join("beetle_cards.json");
+
+        let database = models::utils::load_beetle_database(file_path.to_str().unwrap()).unwrap();
+
+        match self.get_beetle_user().await {
+            Ok(user) => {
+                let organized = OrganizedInventory::from_inventory(&user.inventory, &database);
+                
+                if let Some(trash) = organized.get_trash() {
+                    println!("=== TRASH ITEMS ===");
+                    
+                    // Collect all trash items that have quantity > 0
+                    let mut trash_items: Vec<(&str, i64)> = trash
+                        .iter()
+                        .filter(|item| item.quantity > 0)
+                        .map(|item| (item.data.beetle.as_str(), item.quantity))
+                        .collect();
+
+                    for item in &trash_items {
+                        println!("{}: {} (rarity: 1)", item.0, item.1);
+                    }
+
+                    println!("\n=== STARTING TRASH CRAFTING ===");
+                    
+                    // Process trash items 2 by 2
+                    let mut idx = 0;
+                    while idx < trash_items.len() {
+                        let (item1_key, item1_qty) = trash_items[idx];
+                        
+                        // Try to use 2 of the same item if quantity >= 2
+                        let (slot1, slot2) = if item1_qty >= 2 {
+                            (item1_key, item1_key)
+                        } else if idx + 1 < trash_items.len() {
+                            // Use two different items
+                            let (item2_key, _) = trash_items[idx + 1];
+                            (item1_key, item2_key)
+                        } else {
+                            // Only 1 item left, can't craft
+                            println!("⚠️  Only 1 trash item left ({}), skipping", item1_key);
+                            break;
+                        };
+
+                        println!("\n🔨 Crafting with: {} + {}", slot1, slot2);
+
+                        let craft_request = CraftRequest {
+                            typeName: 1, // Type 1 for junk cube crafting
+                            slot1: slot1.to_string(),
+                            slot2: slot2.to_string(),
+                            slot3: "".to_string(),
+                            slot4: "".to_string(),
+                            sacrifice: "".to_string(),
+                            hammer: "".to_string(),
+                        };
+
+                        let headers = self.build_headers_remilia().await;
+
+                        match self
+                            .client
+                            .post("https://www.remilia.net/beetle/api/action/craft")
+                            .headers(headers.clone())
+                            .json(&craft_request)
+                            .send()
+                            .await
+                        {
+                            Ok(response) => {
+                                match response.text().await {
+                                    Ok(text) => {
+                                        match serde_json::from_str::<CraftResponse>(&text) {
+                                            Ok(craft_response) => {
+                                                if craft_response.success {
+                                                    junk_count += 1;
+                                                    println!("✅ Successfully crafted junk cube #{}", junk_count);
+                                                    
+                                                    // Update quantities
+                                                    if slot1 == slot2 {
+                                                        // Used 2 of the same item
+                                                        trash_items[idx].1 -= 2;
+                                                        if trash_items[idx].1 <= 0 {
+                                                            idx += 1;
+                                                        }
+                                                    } else {
+                                                        // Used 2 different items
+                                                        trash_items[idx].1 -= 1;
+                                                        if idx + 1 < trash_items.len() {
+                                                            trash_items[idx + 1].1 -= 1;
+                                                            // Move to next items
+                                                            if trash_items[idx].1 <= 0 {
+                                                                idx += 1;
+                                                            }
+                                                            if idx < trash_items.len() && trash_items[idx].1 <= 0 {
+                                                                idx += 1;
+                                                            }
+                                                        }
+                                                    }
+                                                    
+                                                    // Small delay to avoid rate limiting
+                                                    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+                                                } else {
+                                                    println!("❌ Failed to craft: Crafting unsuccessful");
+                                                    break;
+                                                }
+                                            }
+                                            Err(e) => {
+                                                println!("❌ Failed to parse craft response: {}", e);
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    Err(e) => {
+                                        println!("❌ Failed to read response: {}", e);
+                                        break;
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                println!("❌ Failed to send craft request: {}", e);
+                                break;
+                            }
+                        }
+                    }
+
+                    println!("\n=== CRAFTING COMPLETE ===");
+                    println!("Total junk cubes crafted: {}", junk_count);
+                } else {
+                    println!("No trash items found in inventory");
+                }
+            }
+            Err(e) => {
+                println!("❌ Failed to fetch user for merging: {}", e);
+                return Ok(0);
+            }
+        }
+
+        Ok(junk_count)
+    }
+
 }
 
 // ===== WORKER STATS =====
@@ -1396,6 +1561,7 @@ async fn beetle_auto_claim_worker(client: Arc<BeetleApiClient>, stats: WorkerSta
                             }
                         }
                         println!("✅ Completed all available hunts\n");
+                        client.auto_merge_trash().await?;
                     }
                 }
 
@@ -1416,7 +1582,7 @@ async fn beetle_auto_claim_worker(client: Arc<BeetleApiClient>, stats: WorkerSta
                         catch_cooldown.min(hunt_reset)
                     }
                 };
-                let next_check = user.time_until_catch_ready();
+                // let next_check = user.time_until_catch_ready();
                 println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
                 println!(
                     "[BEETLE] ⏳ Next check in: {} ({})\n",
@@ -1726,7 +1892,6 @@ async fn run_all_workers(client: BeetleApiClient) -> Result<()> {
     if let Ok(user) = client.get_beetle_user().await {
         stats.init_inventory(user.get_inventory()).await;
     }
-
     let stats_clone = stats.clone();
     let client_clone = client.clone();
     let dashboard_handle =
@@ -1749,6 +1914,7 @@ async fn run_all_workers(client: BeetleApiClient) -> Result<()> {
 
     let client_clone = client.clone();
     let scrape_handle = tokio::spawn(async move { daily_scrape_worker(client_clone).await });
+
 
     tokio::select! {
         _ = signal::ctrl_c() => {
